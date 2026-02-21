@@ -96,7 +96,7 @@ body::after {
 }
 
 .glyph-main {
-  transform: scaleX(0.86);
+  transform: scaleX(0.76);
   transform-origin: center;
   transform-box: fill-box;
 }
