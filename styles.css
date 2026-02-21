@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
 
 *,
 *::before,
@@ -7,13 +7,12 @@
 }
 
 :root {
-  --bg-0: #020305;
-  --bg-1: #07090f;
-  --ink: #f2f7ff;
-  --ink-soft: rgba(168, 214, 255, 0.58);
-  --ink-quiet: rgba(155, 203, 246, 0.34);
-  --glow-a: rgba(98, 175, 255, 0.28);
-  --glow-b: rgba(98, 175, 255, 0.12);
+  --bg-0: #020613;
+  --bg-1: #0a1230;
+  --fg: #f8fbff;
+  --cyan: rgba(0, 226, 255, 0.7);
+  --magenta: rgba(255, 70, 180, 0.48);
+  --focus: rgba(255, 255, 255, 0.3);
 }
 
 html,
@@ -23,11 +22,11 @@ body {
 }
 
 body {
-  color: var(--ink);
+  color: var(--fg);
   cursor: crosshair;
   background:
-    radial-gradient(120vw 70vh at 50% -16%, rgba(138, 191, 255, 0.16), transparent 55%),
-    radial-gradient(110vw 70vh at 50% 118%, rgba(112, 164, 255, 0.11), transparent 56%),
+    radial-gradient(120vw 80vh at 50% -20%, rgba(0, 174, 255, 0.13), transparent 60%),
+    radial-gradient(100vw 70vh at 50% 120%, rgba(255, 67, 162, 0.09), transparent 60%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
   overflow: hidden;
 }
@@ -43,17 +42,16 @@ body::after {
 body::before {
   background-image: repeating-linear-gradient(
     to bottom,
-    rgba(176, 216, 255, 0.04) 0,
-    rgba(176, 216, 255, 0.04) 1px,
+    rgba(255, 255, 255, 0.055) 0,
+    rgba(255, 255, 255, 0.055) 1px,
     transparent 1px,
-    transparent 4px
+    transparent 3px
   );
-  opacity: 0.24;
-  mix-blend-mode: soft-light;
+  opacity: 0.22;
 }
 
 body::after {
-  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.85);
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.88);
 }
 
 .stage {
@@ -67,45 +65,54 @@ body::after {
   position: relative;
   display: inline-grid;
   place-items: center;
-  padding: 0.34rem 0.72rem;
-  text-decoration: none;
-  color: inherit;
+  padding: 0.38rem 0.72rem;
   border: 1px solid transparent;
   border-radius: 8px;
-  outline: none;
+  color: inherit;
+  text-decoration: none;
   cursor: inherit;
-  transition: border-color 0.35s ease, box-shadow 0.35s ease;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .monogram-link:focus-visible {
-  border-color: var(--ink-quiet);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.11);
 }
 
 .monogram {
   position: relative;
   margin: 0;
   font-family: "Silkscreen", "Press Start 2P", "VT323", monospace;
-  font-size: clamp(2.3rem, 13.5vw, 5.15rem);
+  font-size: clamp(2.2rem, 13.5vw, 5rem);
   font-weight: 400;
   line-height: 0.86;
-  letter-spacing: 0.034em;
-  font-variant-ligatures: none;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   user-select: none;
-  color: var(--ink);
-  animation: lfo-pulse 4.55s ease-in-out infinite;
-  text-shadow: 0 0 7px var(--glow-a), 0 0 16px var(--glow-b);
+  color: var(--fg);
+  text-shadow: 0 0 9px rgba(171, 224, 255, 0.24);
+  animation: teletext-pulse 4.55s steps(18, end) infinite;
 }
 
-.monogram::before {
+.monogram::before,
+.monogram::after {
   content: attr(data-text);
   position: absolute;
   inset: 0;
-  color: var(--ink-soft);
-  transform: translate(1px, 1px);
-  opacity: 0.18;
   pointer-events: none;
+}
+
+.monogram::before {
+  color: var(--cyan);
+  transform: translate(-1px, 0);
+  opacity: 0.6;
+}
+
+.monogram::after {
+  color: var(--magenta);
+  transform: translate(1px, 0);
+  opacity: 0.52;
 }
 
 .monogram-link:hover .monogram {
@@ -115,25 +122,27 @@ body::after {
 }
 
 .monogram-link:hover {
-  border-color: rgba(166, 206, 245, 0.28);
+  border-color: rgba(171, 224, 255, 0.27);
 }
 
-@keyframes lfo-pulse {
+@keyframes teletext-pulse {
   0%,
   100% {
-    opacity: 0.78;
-    text-shadow: 0 0 6px rgba(127, 183, 255, 0.25), 0 0 14px rgba(127, 183, 255, 0.11);
+    opacity: 0.8;
+    filter: saturate(0.94);
+    text-shadow: 0 0 7px rgba(171, 224, 255, 0.19), 0 0 14px rgba(110, 174, 255, 0.1);
   }
   50% {
-    opacity: 0.98;
-    text-shadow: 0 0 9px rgba(127, 183, 255, 0.36), 0 0 20px rgba(127, 183, 255, 0.16);
+    opacity: 1;
+    filter: saturate(1);
+    text-shadow: 0 0 10px rgba(171, 224, 255, 0.31), 0 0 20px rgba(110, 174, 255, 0.16);
   }
 }
 
 @media (max-width: 680px) {
   .monogram {
-    font-size: clamp(2.05rem, 17vw, 4.15rem);
-    letter-spacing: 0.028em;
+    font-size: clamp(2rem, 17vw, 4.1rem);
+    letter-spacing: 0.022em;
   }
 }
 
