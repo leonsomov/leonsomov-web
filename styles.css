@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
 
 *,
 *::before,
@@ -47,10 +47,9 @@ body {
 
 .monogram {
   margin: 0;
-  font-family: "Share Tech Mono", "OCR A Std", "OCR A Extended", "Lucida Console",
-    Monaco, "Courier New", monospace;
-  font-size: clamp(2.9rem, 18vw, 7.2rem);
-  font-weight: 300;
+  font-family: "VT323", "Lucida Console", Monaco, "Courier New", monospace;
+  font-size: clamp(2.6rem, 16vw, 6.3rem);
+  font-weight: 400;
   line-height: 0.82;
   letter-spacing: 0.015em;
   text-transform: uppercase;
