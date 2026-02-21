@@ -7,9 +7,11 @@
 }
 
 :root {
-  --bg: #000000;
-  --terminal: #ffffff;
-  --terminal-soft: rgba(255, 255, 255, 0.35);
+  --bg-0: #030303;
+  --bg-1: #070707;
+  --ink: #ffffff;
+  --ink-soft: rgba(255, 255, 255, 0.76);
+  --ink-quiet: rgba(255, 255, 255, 0.34);
 }
 
 html,
@@ -19,9 +21,37 @@ body {
 }
 
 body {
-  background: var(--bg);
-  color: var(--terminal);
+  color: var(--ink);
   cursor: crosshair;
+  background:
+    radial-gradient(120vw 70vh at 50% -16%, rgba(255, 255, 255, 0.1), transparent 55%),
+    radial-gradient(110vw 70vh at 50% 118%, rgba(170, 176, 190, 0.1), transparent 56%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  overflow: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  opacity: 0.2;
+  mix-blend-mode: soft-light;
+}
+
+body::after {
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.85);
 }
 
 .stage {
@@ -32,30 +62,75 @@ body {
 }
 
 .monogram-link {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  padding: 0.34rem 0.72rem;
   text-decoration: none;
   color: inherit;
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 0.2rem 0.45rem;
   outline: none;
   cursor: inherit;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .monogram-link:focus-visible {
-  border-color: var(--terminal-soft);
+  border-color: var(--ink-quiet);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .monogram {
+  position: relative;
   margin: 0;
   font-family: "VT323", "Lucida Console", Monaco, "Courier New", monospace;
-  font-size: clamp(2.6rem, 16vw, 6.3rem);
+  font-size: clamp(2.8rem, 18vw, 6.95rem);
   font-weight: 400;
-  line-height: 0.82;
-  letter-spacing: 0.015em;
+  line-height: 0.8;
+  letter-spacing: 0.018em;
   text-transform: uppercase;
   user-select: none;
-  animation: terminal-pulse 4.55s ease-in-out infinite;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.14);
+  color: transparent;
+  background: linear-gradient(
+    175deg,
+    #fefefe 0%,
+    #c5ccd2 27%,
+    #ffffff 46%,
+    #7f8993 63%,
+    #fafafa 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: lfo-pulse 4.55s ease-in-out infinite;
+  text-shadow: 0 0 9px rgba(255, 255, 255, 0.12);
+}
+
+.monogram::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: var(--ink-soft);
+  filter: blur(0.4px);
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.monogram::after {
+  content: "";
+  position: absolute;
+  inset: -8% -12%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 60%,
+    transparent 100%
+  );
+  transform: translateX(-125%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: gloss-sweep 8.8s ease-in-out infinite;
 }
 
 .monogram-link:hover .monogram {
@@ -64,20 +139,48 @@ body {
   text-underline-offset: 0.12em;
 }
 
-@keyframes terminal-pulse {
+.monogram-link:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+@keyframes lfo-pulse {
   0%,
   100% {
-    opacity: 0.74;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.11), 0 0 10px rgba(255, 255, 255, 0.06);
+    opacity: 0.78;
+    text-shadow: 0 0 7px rgba(255, 255, 255, 0.1), 0 0 14px rgba(255, 255, 255, 0.06);
   }
   50% {
-    opacity: 0.96;
-    text-shadow: 0 0 7px rgba(255, 255, 255, 0.16), 0 0 14px rgba(255, 255, 255, 0.1);
+    opacity: 0.98;
+    text-shadow: 0 0 11px rgba(255, 255, 255, 0.18), 0 0 20px rgba(255, 255, 255, 0.12);
+  }
+}
+
+@keyframes gloss-sweep {
+  0%,
+  72%,
+  100% {
+    transform: translateX(-125%);
+    opacity: 0;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  90% {
+    transform: translateX(125%);
+    opacity: 0.12;
+  }
+}
+
+@media (max-width: 680px) {
+  .monogram {
+    font-size: clamp(2.45rem, 18vw, 4.8rem);
+    letter-spacing: 0.012em;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .monogram {
+  .monogram,
+  .monogram::after {
     animation: none;
   }
 }
