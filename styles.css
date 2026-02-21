@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Michroma&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
 
 *,
 *::before,
@@ -83,27 +83,17 @@ body::after {
 .monogram {
   position: relative;
   margin: 0;
-  font-family: "Michroma", "Eurostile", "Bank Gothic", "Oxanium", sans-serif;
-  font-size: clamp(2.45rem, 15vw, 5.85rem);
+  font-family: "Silkscreen", "Press Start 2P", "VT323", monospace;
+  font-size: clamp(2.45rem, 15vw, 5.35rem);
   font-weight: 400;
-  line-height: 0.9;
-  letter-spacing: 0.075em;
+  line-height: 0.86;
+  letter-spacing: 0.045em;
   font-variant-ligatures: none;
   text-transform: uppercase;
   user-select: none;
-  color: transparent;
-  background: linear-gradient(
-    175deg,
-    #fefefe 0%,
-    #c5ccd2 27%,
-    #ffffff 46%,
-    #7f8993 63%,
-    #fafafa 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
+  color: var(--ink);
   animation: lfo-pulse 4.55s ease-in-out infinite;
-  text-shadow: 0 0 9px rgba(255, 255, 255, 0.12);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.13);
 }
 
 .monogram::before {
@@ -111,27 +101,9 @@ body::after {
   position: absolute;
   inset: 0;
   color: var(--ink-soft);
-  filter: blur(0.4px);
-  opacity: 0.38;
+  transform: translate(1px, 1px);
+  opacity: 0.22;
   pointer-events: none;
-}
-
-.monogram::after {
-  content: "";
-  position: absolute;
-  inset: -8% -12%;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    transparent 40%,
-    rgba(255, 255, 255, 0.22) 50%,
-    transparent 60%,
-    transparent 100%
-  );
-  transform: translateX(-125%);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: gloss-sweep 8.8s ease-in-out infinite;
 }
 
 .monogram-link:hover .monogram {
@@ -152,36 +124,19 @@ body::after {
   }
   50% {
     opacity: 0.98;
-    text-shadow: 0 0 11px rgba(255, 255, 255, 0.18), 0 0 20px rgba(255, 255, 255, 0.12);
-  }
-}
-
-@keyframes gloss-sweep {
-  0%,
-  72%,
-  100% {
-    transform: translateX(-125%);
-    opacity: 0;
-  }
-  80% {
-    opacity: 0.85;
-  }
-  90% {
-    transform: translateX(125%);
-    opacity: 0.12;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.17), 0 0 18px rgba(255, 255, 255, 0.11);
   }
 }
 
 @media (max-width: 680px) {
   .monogram {
-    font-size: clamp(2.45rem, 18vw, 4.8rem);
-    letter-spacing: 0.012em;
+    font-size: clamp(2.2rem, 18vw, 4.5rem);
+    letter-spacing: 0.03em;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .monogram,
-  .monogram::after {
+  .monogram {
     animation: none;
   }
 }
