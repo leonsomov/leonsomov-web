@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&display=swap");
 
 *,
 *::before,
@@ -83,11 +83,12 @@ body::after {
 .monogram {
   position: relative;
   margin: 0;
-  font-family: "VT323", "Lucida Console", Monaco, "Courier New", monospace;
-  font-size: clamp(2.8rem, 18vw, 6.95rem);
-  font-weight: 400;
-  line-height: 0.8;
-  letter-spacing: 0.018em;
+  font-family: "IBM Plex Mono", "JetBrains Mono", "Share Tech Mono", Monaco,
+    "Courier New", monospace;
+  font-size: clamp(2.6rem, 16vw, 6.1rem);
+  font-weight: 300;
+  line-height: 0.88;
+  letter-spacing: 0.032em;
   text-transform: uppercase;
   user-select: none;
   color: transparent;
