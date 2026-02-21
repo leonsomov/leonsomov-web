@@ -81,7 +81,7 @@ body::after {
 }
 
 .monogram-svg {
-  width: clamp(16rem, 52vw, 36rem);
+  width: clamp(12rem, 40vw, 28rem);
   height: auto;
   display: block;
   shape-rendering: crispEdges;
@@ -119,7 +119,7 @@ body::after {
 
 @media (max-width: 680px) {
   .monogram-svg {
-    width: clamp(13rem, 62vw, 22rem);
+    width: clamp(9.5rem, 48vw, 16rem);
   }
 }
 
