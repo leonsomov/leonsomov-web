@@ -6,8 +6,8 @@
 
 :root {
   --bg: #000000;
-  --terminal: #94f7a0;
-  --terminal-soft: rgba(148, 247, 160, 0.35);
+  --terminal: #ffffff;
+  --terminal-soft: rgba(255, 255, 255, 0.35);
 }
 
 html,
@@ -52,11 +52,11 @@ body {
   text-transform: uppercase;
   user-select: none;
   animation: terminal-pulse 3.8s ease-in-out infinite;
-  text-shadow: 0 0 10px rgba(148, 247, 160, 0.22);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
 }
 
 .monogram-link:hover .monogram {
-  text-shadow: 0 0 14px rgba(148, 247, 160, 0.3);
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.3);
 }
 
 @keyframes terminal-pulse {
@@ -64,12 +64,12 @@ body {
   100% {
     opacity: 0.8;
     transform: scale(1);
-    text-shadow: 0 0 8px rgba(148, 247, 160, 0.2), 0 0 18px rgba(148, 247, 160, 0.12);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.2), 0 0 18px rgba(255, 255, 255, 0.12);
   }
   50% {
     opacity: 1;
     transform: scale(1.024);
-    text-shadow: 0 0 13px rgba(148, 247, 160, 0.33), 0 0 28px rgba(148, 247, 160, 0.2);
+    text-shadow: 0 0 13px rgba(255, 255, 255, 0.33), 0 0 28px rgba(255, 255, 255, 0.2);
   }
 }
 
