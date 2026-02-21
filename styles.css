@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap");
-
 *,
 *::before,
 *::after {
@@ -10,8 +8,8 @@
   --bg-0: #020613;
   --bg-1: #0a1230;
   --fg: #f8fbff;
-  --cyan: rgba(0, 226, 255, 0.7);
-  --magenta: rgba(255, 70, 180, 0.48);
+  --cyan: rgba(0, 226, 255, 0.62);
+  --magenta: rgba(255, 70, 180, 0.42);
   --focus: rgba(255, 255, 255, 0.3);
 }
 
@@ -81,38 +79,101 @@ body::after {
 }
 
 .monogram {
-  position: relative;
+  --px: clamp(0.42rem, 1.15vw, 0.86rem);
   margin: 0;
-  font-family: "Silkscreen", "Press Start 2P", "VT323", monospace;
-  font-size: clamp(2.4rem, 14.8vw, 5.5rem);
-  font-weight: 400;
-  line-height: 0.86;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  user-select: none;
-  color: var(--fg);
-  text-shadow: 0 0 9px rgba(171, 224, 255, 0.24);
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--px) * 1.6);
+  line-height: 1;
   animation: teletext-pulse 4.55s steps(18, end) infinite;
+  filter: drop-shadow(-1px 0 var(--cyan)) drop-shadow(1px 0 var(--magenta))
+    drop-shadow(0 0 9px rgba(171, 224, 255, 0.22));
 }
 
-.monogram::before,
-.monogram::after {
-  content: attr(data-text);
+.sr-only {
   position: absolute;
-  inset: 0;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.monogram::before {
-  color: var(--cyan);
-  transform: translate(-1px, 0);
-  opacity: 0.6;
+.glyph {
+  position: relative;
+  display: block;
 }
 
-.monogram::after {
-  color: var(--magenta);
-  transform: translate(1px, 0);
-  opacity: 0.52;
+.glyph::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--px);
+  height: var(--px);
+  background: transparent;
+}
+
+.glyph-l {
+  width: calc(var(--px) * 5);
+  height: calc(var(--px) * 7);
+}
+
+.glyph-l::before {
+  box-shadow:
+    calc(var(--px) * 0) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 1) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 2) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 3) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 4) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 5) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 1) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 2) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 3) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 4) calc(var(--px) * 6) 0 0 var(--fg);
+}
+
+.glyph-dash {
+  width: calc(var(--px) * 4);
+  height: calc(var(--px) * 7);
+}
+
+.glyph-dash::before {
+  box-shadow:
+    calc(var(--px) * 0) calc(var(--px) * 3) 0 0 var(--fg),
+    calc(var(--px) * 1) calc(var(--px) * 3) 0 0 var(--fg),
+    calc(var(--px) * 2) calc(var(--px) * 3) 0 0 var(--fg),
+    calc(var(--px) * 3) calc(var(--px) * 3) 0 0 var(--fg);
+}
+
+.glyph-s {
+  width: calc(var(--px) * 5);
+  height: calc(var(--px) * 7);
+}
+
+.glyph-s::before {
+  box-shadow:
+    calc(var(--px) * 0) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 1) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 2) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 3) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 4) calc(var(--px) * 0) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 1) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 2) 0 0 var(--fg),
+    calc(var(--px) * 1) calc(var(--px) * 2) 0 0 var(--fg),
+    calc(var(--px) * 2) calc(var(--px) * 2) 0 0 var(--fg),
+    calc(var(--px) * 3) calc(var(--px) * 2) 0 0 var(--fg),
+    calc(var(--px) * 4) calc(var(--px) * 3) 0 0 var(--fg),
+    calc(var(--px) * 4) calc(var(--px) * 4) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 5) 0 0 var(--fg),
+    calc(var(--px) * 0) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 1) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 2) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 3) calc(var(--px) * 6) 0 0 var(--fg),
+    calc(var(--px) * 4) calc(var(--px) * 6) 0 0 var(--fg);
 }
 
 .monogram-link:hover {
@@ -122,21 +183,23 @@ body::after {
 @keyframes teletext-pulse {
   0%,
   100% {
-    opacity: 0.8;
-    filter: saturate(0.94);
-    text-shadow: 0 0 7px rgba(171, 224, 255, 0.19), 0 0 14px rgba(110, 174, 255, 0.1);
+    opacity: 0.82;
+    filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.52))
+      drop-shadow(1px 0 rgba(255, 70, 180, 0.35))
+      drop-shadow(0 0 8px rgba(171, 224, 255, 0.19));
   }
   50% {
     opacity: 1;
-    filter: saturate(1);
-    text-shadow: 0 0 10px rgba(171, 224, 255, 0.31), 0 0 20px rgba(110, 174, 255, 0.16);
+    filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.65))
+      drop-shadow(1px 0 rgba(255, 70, 180, 0.46))
+      drop-shadow(0 0 12px rgba(171, 224, 255, 0.28));
   }
 }
 
 @media (max-width: 680px) {
   .monogram {
-    font-size: clamp(2.15rem, 18vw, 4.35rem);
-    letter-spacing: 0.022em;
+    --px: clamp(0.36rem, 1.7vw, 0.63rem);
+    gap: calc(var(--px) * 1.35);
   }
 }
 
