@@ -95,6 +95,12 @@ body::after {
   fill: var(--fg);
 }
 
+.glyph-main {
+  transform: scaleX(0.86);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
