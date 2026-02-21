@@ -5,10 +5,10 @@
 }
 
 :root {
-  --bg-0: #020613;
-  --bg-1: #0a1230;
-  --fg: #f8fbff;
-  --focus: rgba(255, 255, 255, 0.3);
+  --bg-0: #030406;
+  --bg-1: #0a0c10;
+  --fg: #24ff1a;
+  --focus: rgba(106, 255, 101, 0.36);
 }
 
 html,
@@ -21,8 +21,8 @@ body {
   color: var(--fg);
   cursor: crosshair;
   background:
-    radial-gradient(120vw 80vh at 50% -20%, rgba(0, 174, 255, 0.13), transparent 60%),
-    radial-gradient(100vw 70vh at 50% 120%, rgba(255, 67, 162, 0.09), transparent 60%),
+    radial-gradient(120vw 80vh at 50% -20%, rgba(35, 200, 50, 0.12), transparent 60%),
+    radial-gradient(100vw 70vh at 50% 120%, rgba(0, 140, 255, 0.09), transparent 60%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
   overflow: hidden;
 }
@@ -81,15 +81,16 @@ body::after {
 }
 
 .monogram-svg {
-  width: clamp(20rem, 58vw, 42rem);
+  width: clamp(20rem, 61vw, 46rem);
   height: auto;
   display: block;
   shape-rendering: crispEdges;
   image-rendering: pixelated;
+  filter: drop-shadow(0 0 7px rgba(57, 255, 49, 0.2));
+}
+
+.glyph-main rect {
   fill: var(--fg);
-  filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.34))
-    drop-shadow(1px 0 rgba(255, 70, 180, 0.24))
-    drop-shadow(0 0 8px rgba(171, 224, 255, 0.22));
 }
 
 .sr-only {
@@ -108,15 +109,17 @@ body::after {
   0%,
   100% {
     opacity: 0.84;
+    filter: saturate(0.96);
   }
   50% {
     opacity: 1;
+    filter: saturate(1.05);
   }
 }
 
 @media (max-width: 680px) {
   .monogram-svg {
-    width: clamp(16rem, 74vw, 28rem);
+    width: clamp(16rem, 78vw, 30rem);
   }
 }
 
