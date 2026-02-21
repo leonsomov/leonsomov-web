@@ -84,7 +84,7 @@ body::after {
   position: relative;
   margin: 0;
   font-family: "Silkscreen", "Press Start 2P", "VT323", monospace;
-  font-size: clamp(2.2rem, 13.5vw, 5rem);
+  font-size: clamp(2.4rem, 14.8vw, 5.5rem);
   font-weight: 400;
   line-height: 0.86;
   letter-spacing: 0.03em;
@@ -115,12 +115,6 @@ body::after {
   opacity: 0.52;
 }
 
-.monogram-link:hover .monogram {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.12em;
-}
-
 .monogram-link:hover {
   border-color: rgba(171, 224, 255, 0.27);
 }
@@ -141,7 +135,7 @@ body::after {
 
 @media (max-width: 680px) {
   .monogram {
-    font-size: clamp(2rem, 17vw, 4.1rem);
+    font-size: clamp(2.15rem, 18vw, 4.35rem);
     letter-spacing: 0.022em;
   }
 }
