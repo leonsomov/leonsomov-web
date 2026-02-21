@@ -8,8 +8,6 @@
   --bg-0: #020613;
   --bg-1: #0a1230;
   --fg: #f8fbff;
-  --cyan: rgba(0, 226, 255, 0.62);
-  --magenta: rgba(255, 70, 180, 0.42);
   --focus: rgba(255, 255, 255, 0.3);
 }
 
@@ -60,17 +58,15 @@ body::after {
 }
 
 .monogram-link {
-  position: relative;
   display: inline-grid;
   place-items: center;
-  padding: 0.38rem 0.72rem;
+  padding: 0.4rem 0.78rem;
   border: 1px solid transparent;
   border-radius: 8px;
   color: inherit;
   text-decoration: none;
   cursor: inherit;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .monogram-link:focus-visible {
@@ -79,16 +75,21 @@ body::after {
 }
 
 .monogram {
-  --px: clamp(0.4rem, 1.08vw, 0.82rem);
   margin: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: calc(var(--px) * 1.6);
-  line-height: 1;
-  animation: teletext-pulse 4.55s steps(18, end) infinite;
+  line-height: 0;
+  animation: teletext-pulse 4.55s steps(16, end) infinite;
+}
+
+.monogram-svg {
+  width: clamp(20rem, 58vw, 42rem);
+  height: auto;
+  display: block;
+  shape-rendering: crispEdges;
+  image-rendering: pixelated;
+  fill: var(--fg);
   filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.34))
-    drop-shadow(1px 0 rgba(255, 70, 180, 0.22))
-    drop-shadow(0 0 8px rgba(171, 224, 255, 0.19));
+    drop-shadow(1px 0 rgba(255, 70, 180, 0.24))
+    drop-shadow(0 0 8px rgba(171, 224, 255, 0.22));
 }
 
 .sr-only {
@@ -103,116 +104,19 @@ body::after {
   border: 0;
 }
 
-.glyph {
-  position: relative;
-  display: block;
-}
-
-.glyph::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: var(--px);
-  height: var(--px);
-  background: transparent;
-}
-
-.glyph-l {
-  width: calc(var(--px) * 6);
-  height: calc(var(--px) * 9);
-}
-
-.glyph-l::before {
-  box-shadow:
-    calc(var(--px) * 0) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 1) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 2) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 5) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 6) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 7) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 1) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 2) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 3) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 4) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 5) calc(var(--px) * 8) 0 0 var(--fg);
-}
-
-.glyph-dash {
-  width: calc(var(--px) * 5);
-  height: calc(var(--px) * 9);
-}
-
-.glyph-dash::before {
-  box-shadow:
-    calc(var(--px) * 0) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 1) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 2) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 3) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 4) calc(var(--px) * 4) 0 0 var(--fg);
-}
-
-.glyph-s {
-  width: calc(var(--px) * 7);
-  height: calc(var(--px) * 9);
-}
-
-.glyph-s::before {
-  box-shadow:
-    calc(var(--px) * 0) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 1) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 2) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 3) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 4) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 5) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 0) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 1) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 2) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 1) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 2) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 3) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 4) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 5) calc(var(--px) * 3) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 4) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 5) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 6) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 7) 0 0 var(--fg),
-    calc(var(--px) * 0) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 1) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 2) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 3) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 4) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 5) calc(var(--px) * 8) 0 0 var(--fg),
-    calc(var(--px) * 6) calc(var(--px) * 8) 0 0 var(--fg);
-}
-
-.monogram-link:hover {
-  border-color: rgba(171, 224, 255, 0.27);
-}
-
 @keyframes teletext-pulse {
   0%,
   100% {
-    opacity: 0.82;
-    filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.38))
-      drop-shadow(1px 0 rgba(255, 70, 180, 0.25))
-      drop-shadow(0 0 8px rgba(171, 224, 255, 0.19));
+    opacity: 0.84;
   }
   50% {
     opacity: 1;
-    filter: drop-shadow(-1px 0 rgba(0, 226, 255, 0.5))
-      drop-shadow(1px 0 rgba(255, 70, 180, 0.34))
-      drop-shadow(0 0 12px rgba(171, 224, 255, 0.28));
   }
 }
 
 @media (max-width: 680px) {
-  .monogram {
-    --px: clamp(0.36rem, 1.7vw, 0.63rem);
-    gap: calc(var(--px) * 1.35);
+  .monogram-svg {
+    width: clamp(16rem, 74vw, 28rem);
   }
 }
 
