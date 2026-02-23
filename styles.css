@@ -80,33 +80,6 @@ body::after {
   animation: teletext-pulse 4.55s steps(16, end) infinite;
 }
 
-.entry-links {
-  margin-top: 1.2rem;
-}
-
-.entry-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 11rem;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid rgba(184, 204, 255, 0.28);
-  border-radius: 8px;
-  color: var(--fg);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-size: 0.74rem;
-  background: rgba(8, 15, 33, 0.42);
-  transition: border-color 140ms ease, background-color 140ms ease;
-}
-
-.entry-link:hover,
-.entry-link:focus-visible {
-  border-color: rgba(184, 204, 255, 0.68);
-  background: rgba(18, 34, 68, 0.64);
-}
-
 .monogram-svg {
   width: clamp(11rem, 36vw, 24rem);
   height: auto;

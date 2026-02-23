@@ -10,6 +10,7 @@ Landing page for `leonsomov.com`, hosted on GitHub Pages.
 - `workspace.html`: song workspace page with share links and comments
 - `workspace.css`: workspace page styles
 - `workspace.js`: workspace logic (URL state, updates, comments embed)
+- `robots.txt`: keeps workspace page out of search indexing
 - `CNAME`: custom domain for GitHub Pages
 
 ## Song Workspace Comments
@@ -20,6 +21,12 @@ One-time setup in GitHub:
 
 1. Ensure **Issues** are enabled for `leonsomov-web`.
 2. Install the utterances app for the repository: <https://github.com/apps/utterances>
+
+Privacy mode:
+
+- Workspace links are not shown on the public home page.
+- `workspace.html` is marked `noindex` and blocked in `robots.txt`.
+- Access uses long random IDs in the share URL, so links are effectively unguessable.
 
 ## Publish to GitHub
 

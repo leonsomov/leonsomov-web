@@ -215,7 +215,7 @@ function sanitizeWorkspaceId(value) {
     .replace(/[^a-z0-9-]/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 48);
+    .slice(0, 120);
 }
 
 function createWorkspaceId(songTitle) {
@@ -223,10 +223,23 @@ function createWorkspaceId(songTitle) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 24) || "song";
+    .slice(0, 18) || "song";
 
-  const randomPart = Math.random().toString(36).slice(2, 8);
+  const randomPart = createSecureToken(16);
   return `${slug}-${randomPart}`;
+}
+
+function createSecureToken(byteLength) {
+  const bytes = new Uint8Array(byteLength);
+  if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+    window.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 function normalizeText(value, maxLength) {
