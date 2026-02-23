@@ -20,7 +20,6 @@ One-time setup in GitHub:
 
 1. Ensure **Issues** are enabled for `leonsomov-web`.
 2. Install the utterances app for the repository: <https://github.com/apps/utterances>
-3. (Optional) Keep the `song-workspace` issue label for filtering workspace threads.
 
 ## Publish to GitHub
 

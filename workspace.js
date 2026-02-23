@@ -2,7 +2,6 @@
 
 const STORAGE_PREFIX = "ls.song.workspace.updates.v1:";
 const COMMENT_REPO = "leonsomov/leonsomov-web";
-const COMMENT_LABEL = "song-workspace";
 
 const ui = {
   createPanel: null,
@@ -317,7 +316,6 @@ function renderComments(workspaceId) {
   script.async = true;
   script.setAttribute("repo", COMMENT_REPO);
   script.setAttribute("issue-term", `song-workspace:${workspaceId}`);
-  script.setAttribute("label", COMMENT_LABEL);
   script.setAttribute("theme", "github-dark");
   script.setAttribute("crossorigin", "anonymous");
   ui.commentsRoot.appendChild(script);
