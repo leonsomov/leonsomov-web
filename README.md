@@ -7,7 +7,20 @@ Landing page for `leonsomov.com`, hosted on GitHub Pages.
 - `index.html`: page structure/content
 - `styles.css`: visual design + responsive layout
 - `script.js`: small interactions (year + reveal)
+- `workspace.html`: song workspace page with share links and comments
+- `workspace.css`: workspace page styles
+- `workspace.js`: workspace logic (URL state, updates, comments embed)
 - `CNAME`: custom domain for GitHub Pages
+
+## Song Workspace Comments
+
+`workspace.html` uses [utterances](https://utteranc.es/) so people with the link can comment on a song workspace.
+
+One-time setup in GitHub:
+
+1. Ensure **Issues** are enabled for `leonsomov-web`.
+2. Install the utterances app for the repository: <https://github.com/apps/utterances>
+3. (Optional) Keep the `song-workspace` issue label for filtering workspace threads.
 
 ## Publish to GitHub
 
@@ -64,4 +77,3 @@ Please provide:
 3. 3 featured projects (name, one sentence, link)
 4. Contact email
 5. Social/profile links (GitHub, Instagram, LinkedIn, etc.)
-

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Song Workspace | Leon Somov</title>
+    <meta
+      name="description"
+      content="Create a shareable workspace link for a song and collect comments."
+    />
+    <meta property="og:title" content="Song Workspace | Leon Somov" />
+    <meta
+      property="og:description"
+      content="Create a shareable workspace link for a song and collect comments."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://leonsomov.com/workspace.html" />
+    <link rel="stylesheet" href="workspace.css" />
+  </head>
+  <body>
+    <main class="workspace-shell" aria-label="Song workspace">
+      <header class="workspace-header">
+        <a class="back-link" href="./index.html" aria-label="Back to home">LS</a>
+        <div>
+          <h1>Song Workspace</h1>
+          <p>Create a private-by-link room for one song and collect comments.</p>
+        </div>
+      </header>
+
+      <section class="panel" id="create-panel">
+        <h2>Create Workspace</h2>
+        <label class="field-label" for="new-song-title">Song title</label>
+        <input
+          id="new-song-title"
+          name="new-song-title"
+          type="text"
+          maxlength="120"
+          placeholder="Example: Midnight Echoes"
+          autocomplete="off"
+        />
+
+        <label class="field-label" for="new-song-focus">What are you editing now?</label>
+        <textarea
+          id="new-song-focus"
+          name="new-song-focus"
+          rows="3"
+          maxlength="280"
+          placeholder="Example: Vocal tuning and bass balance in second chorus."
+        ></textarea>
+
+        <button id="create-workspace-btn" class="btn btn-primary" type="button">
+          Create Share Link
+        </button>
+        <p id="create-feedback" class="feedback" aria-live="polite"></p>
+      </section>
+
+      <section class="panel is-hidden" id="workspace-panel">
+        <div class="panel-head">
+          <h2>Active Workspace</h2>
+          <span class="badge" id="workspace-id-badge"></span>
+        </div>
+
+        <div class="form-grid">
+          <div class="field-block">
+            <label class="field-label" for="song-title-input">Song title</label>
+            <input
+              id="song-title-input"
+              name="song-title-input"
+              type="text"
+              maxlength="120"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field-block">
+            <label class="field-label" for="song-focus-input">Current focus</label>
+            <input
+              id="song-focus-input"
+              name="song-focus-input"
+              type="text"
+              maxlength="280"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        <button id="save-song-meta-btn" class="btn btn-secondary" type="button">
+          Save Song Info To Link
+        </button>
+
+        <label class="field-label" for="share-link-input">Share this link</label>
+        <div class="inline-actions">
+          <input id="share-link-input" class="share-link-input" type="text" readonly />
+          <button id="copy-link-btn" class="btn btn-secondary" type="button">Copy</button>
+        </div>
+        <p id="workspace-feedback" class="feedback" aria-live="polite"></p>
+
+        <h3 class="section-title">Task Updates</h3>
+        <p class="muted">
+          Example update: <strong>Task completed:</strong> tightened kick and bass in verse 2.
+        </p>
+        <textarea
+          id="update-text"
+          name="update-text"
+          rows="3"
+          maxlength="320"
+          placeholder="Write your latest song update..."
+        ></textarea>
+        <div class="inline-actions">
+          <button id="add-update-btn" class="btn btn-primary" type="button">Add Update</button>
+          <button id="copy-update-btn" class="btn btn-secondary" type="button">
+            Copy Update For Comment
+          </button>
+        </div>
+        <ul id="update-list" class="update-list"></ul>
+
+        <h3 class="section-title">Comments</h3>
+        <p class="muted">
+          Anyone with this link can comment here using a GitHub account.
+        </p>
+        <div id="comments-root" class="comments-root"></div>
+      </section>
+    </main>
+
+    <script src="workspace.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,251 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-0: #05080d;
+  --bg-1: #0d121f;
+  --panel: rgba(10, 16, 30, 0.88);
+  --panel-line: rgba(185, 205, 255, 0.22);
+  --fg: #eef3ff;
+  --muted: #9eabc8;
+  --primary: #70a1ff;
+  --primary-strong: #4b83f7;
+  --focus: rgba(151, 186, 255, 0.42);
+  --ok: #7de3ba;
+  --shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  color: var(--fg);
+  background:
+    radial-gradient(100vw 80vh at -10% -10%, rgba(102, 163, 255, 0.15), transparent 55%),
+    radial-gradient(90vw 70vh at 110% 110%, rgba(71, 110, 224, 0.18), transparent 55%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.workspace-shell {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.workspace-header {
+  display: flex;
+  gap: 0.95rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.workspace-header h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+}
+
+.workspace-header p {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+}
+
+.back-link {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--fg);
+  display: inline-grid;
+  place-items: center;
+  letter-spacing: 0.05em;
+  background: rgba(19, 30, 57, 0.65);
+}
+
+.panel {
+  border: 1px solid var(--panel-line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.panel h2 {
+  margin: 0 0 0.95rem;
+  font-size: 1.15rem;
+}
+
+.field-label {
+  display: block;
+  margin: 0.7rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.89rem;
+}
+
+input[type="text"],
+textarea {
+  width: 100%;
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  background: rgba(10, 18, 33, 0.9);
+  color: var(--fg);
+  padding: 0.66rem 0.78rem;
+  font: inherit;
+}
+
+input[type="text"]:focus-visible,
+textarea:focus-visible,
+.btn:focus-visible,
+.back-link:focus-visible {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.58rem 0.86rem;
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+}
+
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #081021;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.btn-secondary {
+  background: rgba(17, 27, 46, 0.88);
+  border-color: var(--panel-line);
+}
+
+.btn-secondary:hover {
+  border-color: var(--focus);
+}
+
+.feedback {
+  margin: 0.6rem 0 0;
+  min-height: 1.2em;
+  color: var(--ok);
+  font-size: 0.9rem;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--panel-line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: "Menlo", "Consolas", monospace;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 0.65rem;
+}
+
+.field-block {
+  min-width: 0;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+}
+
+.share-link-input {
+  flex: 1 1 380px;
+}
+
+.section-title {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 1.04rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.update-list {
+  list-style: none;
+  margin: 0.72rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.update-item {
+  border: 1px solid var(--panel-line);
+  border-radius: 10px;
+  padding: 0.58rem 0.66rem;
+  background: rgba(8, 14, 28, 0.92);
+}
+
+.update-item-head {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.24rem;
+}
+
+.update-item-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.update-item-empty {
+  border-style: dashed;
+  color: var(--muted);
+  text-align: center;
+}
+
+.comments-root {
+  margin-top: 0.72rem;
+  border: 1px solid var(--panel-line);
+  border-radius: 12px;
+  background: rgba(8, 14, 28, 0.92);
+  padding: 0.45rem;
+  min-height: 160px;
+}
+
+@media (max-width: 760px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
