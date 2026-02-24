@@ -73,7 +73,7 @@ body {
 }
 
 .monogram-svg {
-  width: clamp(11rem, 36vw, 24rem);
+  width: clamp(9.2rem, 30vw, 20rem);
   height: auto;
   display: block;
   transition: transform 0.25s ease, opacity 0.25s ease;
@@ -103,7 +103,7 @@ body {
 
 @media (max-width: 680px) {
   .monogram-svg {
-    width: clamp(8.8rem, 44vw, 14rem);
+    width: clamp(7.3rem, 36.7vw, 11.7rem);
   }
 }
 
