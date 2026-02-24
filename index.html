@@ -9,9 +9,16 @@
     <meta property="og:description" content="Official landing page." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://leonsomov.com" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Cpath d='M8 8L14 8 14 48 30 48 30 54 8 54Z' fill='%23fff'/%3E%3Cpath d='M53 11L43 11Q37 11 37 17L37 25Q37 31 43 31L47 31Q53 31 53 37L53 45Q53 51 47 51L37 51' fill='none' stroke='%23fff' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <canvas class="bg-canvas" aria-hidden="true"></canvas>
+
     <main class="stage" aria-label="Landing page">
       <a
         class="monogram-link"
@@ -28,23 +35,30 @@
             aria-hidden="true"
             focusable="false"
           >
-            <g class="glyph-main">
-              <rect x="0" y="0" width="10" height="70" />
-              <rect x="0" y="60" width="60" height="10" />
-
-              <rect x="86" y="30" width="42" height="10" />
-
-              <rect x="150" y="0" width="74" height="10" />
-              <rect x="150" y="10" width="10" height="20" />
-              <rect x="214" y="10" width="10" height="10" />
-              <rect x="150" y="30" width="74" height="10" />
-              <rect x="214" y="40" width="10" height="20" />
-              <rect x="150" y="50" width="10" height="20" />
-              <rect x="150" y="60" width="74" height="10" />
-            </g>
+            <!-- L -->
+            <path
+              d="M0 0 L12 0 L12 68 L50 68 L50 80 L0 80 Z"
+              fill="currentColor"
+            />
+            <!-- Dash -->
+            <path
+              d="M72 34 L108 34 L108 46 L72 46 Z"
+              fill="currentColor"
+            />
+            <!-- S -->
+            <path
+              d="M194 6 L148 6 Q136 6 136 18 L136 28 Q136 40 148 40
+                 L182 40 Q194 40 194 52 L194 62 Q194 74 182 74 L136 74"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="12"
+              stroke-linecap="round"
+            />
           </svg>
         </h1>
       </a>
     </main>
+
+    <script src="script.js"></script>
   </body>
 </html>
