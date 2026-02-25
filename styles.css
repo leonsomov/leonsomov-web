@@ -148,11 +148,9 @@ body {
 /* ── Synth Panel (under monogram) ── */
 
 .synth-panel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 2.5rem;
+  display: block;
+  width: min(220px, 70vw);
+  margin-top: 2.25rem;
   opacity: 0;
   transition: opacity 0.8s ease;
   pointer-events: none;
@@ -163,30 +161,54 @@ body {
   pointer-events: auto;
 }
 
-.knob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: grab;
+.flux-control {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.018);
+  background: rgba(255, 255, 255, 0.001);
+  padding: 0.15rem;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.knob:active {
+.xy-pad {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.035);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.005), rgba(255, 255, 255, 0.0005)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.005), transparent 45%, transparent 55%, rgba(255, 255, 255, 0.005));
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.xy-pad:active {
   cursor: grabbing;
 }
 
-.knob svg {
-  display: block;
+.xy-pad:focus-visible {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
-.knob-label {
-  font-family: var(--font);
-  font-size: 0.5rem;
-  letter-spacing: 0.1em;
-  color: var(--dim);
-  margin-top: 3px;
-  text-align: center;
+.xy-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0.44rem;
+  height: 0.44rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 0 0 0.6px rgba(255, 255, 255, 0.16);
+  opacity: 0.74;
+  transform: translate(-50%, -50%);
+}
+
+.flux-control:hover {
+  border-color: rgba(255, 255, 255, 0.04);
 }
 
 /* ── Accessibility ── */
@@ -219,19 +241,12 @@ body {
   }
 
   .synth-panel {
-    gap: 0.5rem;
     margin-top: 1.5rem;
-    flex-wrap: wrap;
-    max-width: 90vw;
+    width: min(200px, 68vw);
   }
 
-  .knob svg {
-    width: 36px;
-    height: 36px;
-  }
-
-  .knob-label {
-    font-size: 0.4rem;
+  .flux-control {
+    padding: 0.14rem;
   }
 }
 
