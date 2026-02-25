@@ -118,6 +118,77 @@ body {
   text-underline-offset: 4px;
 }
 
+/* ── Breathe button ── */
+
+.breathe-btn {
+  all: unset;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+  cursor: pointer;
+  margin-top: 2rem;
+  transition: color 0.2s;
+}
+
+.breathe-btn:hover {
+  color: var(--fg);
+}
+
+.breathe-btn:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.breathe-btn.active {
+  color: var(--fg);
+}
+
+/* ── Synth Panel (under monogram) ── */
+
+.synth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.synth-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.knob:active {
+  cursor: grabbing;
+}
+
+.knob svg {
+  display: block;
+}
+
+.knob-label {
+  font-family: var(--font);
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  margin-top: 3px;
+  text-align: center;
+}
+
 /* ── Accessibility ── */
 
 .sr-only {
@@ -141,6 +212,26 @@ body {
 
   .link-text {
     font-size: 0.7rem;
+  }
+
+  .breathe-btn {
+    font-size: 0.65rem;
+  }
+
+  .synth-panel {
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    max-width: 90vw;
+  }
+
+  .knob svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .knob-label {
+    font-size: 0.4rem;
   }
 }
 
