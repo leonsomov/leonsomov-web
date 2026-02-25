@@ -412,6 +412,20 @@
   // ── XY Drag Interaction ──
 
   let xyActive = false;
+  let xyPointerId = null;
+  const xyLatch = { x: 0.42, y: 0.58 };
+
+  function latchCurrentXY() {
+    xyLatch.x = getMacroX();
+    xyLatch.y = getMacroY();
+  }
+
+  function reapplyLatchedXY() {
+    setFromNorm('x', xyLatch.x);
+    setFromNorm('y', xyLatch.y);
+    updateControlVisual();
+    syncKnobToAudio('xy');
+  }
 
   function getXYFromEvent(pad, e) {
     const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || null;
@@ -433,25 +447,51 @@
 
     setFromNorm('x', pos.x);
     setFromNorm('y', pos.y);
+    latchCurrentXY();
     updateControlVisual();
     syncKnobToAudio('xy');
   }
 
-  function onControlStart(e) {
+  function onControlPointerDown(e) {
     if (!e.target.closest('.xy-pad')) return;
+
+    const pad = controlElements.xy ? controlElements.xy.pad : null;
     xyActive = true;
+    xyPointerId = e.pointerId;
+    if (pad && typeof pad.setPointerCapture === 'function') {
+      try {
+        pad.setPointerCapture(e.pointerId);
+      } catch (_) {
+        // Pointer capture can fail on some touch edge cases.
+      }
+    }
+
     applyXYFromEvent(e);
     if (e.cancelable) e.preventDefault();
   }
 
-  function onControlMove(e) {
-    if (!xyActive) return;
+  function onControlPointerMove(e) {
+    if (!xyActive || e.pointerId !== xyPointerId) return;
     applyXYFromEvent(e);
     if (e.cancelable) e.preventDefault();
   }
 
-  function onControlEnd() {
+  function onControlPointerEnd(e) {
+    if (!xyActive && xyPointerId === null) return;
+    if (xyPointerId !== null && e.pointerId !== xyPointerId) return;
+
+    const pad = controlElements.xy ? controlElements.xy.pad : null;
+    if (pad && typeof pad.releasePointerCapture === 'function' && xyPointerId !== null) {
+      try {
+        pad.releasePointerCapture(xyPointerId);
+      } catch (_) {
+        // Ignore release errors when capture was already dropped.
+      }
+    }
+
     xyActive = false;
+    xyPointerId = null;
+    reapplyLatchedXY();
   }
 
   function onControlKeyDown(e) {
@@ -470,6 +510,7 @@
     if (e.key === 'Home') {
       setFromNorm('x', 0.2);
       setFromNorm('y', 0.2);
+      latchCurrentXY();
       updateControlVisual();
       syncKnobToAudio('xy');
       e.preventDefault();
@@ -479,6 +520,7 @@
     if (e.key === 'End') {
       setFromNorm('x', 0.82);
       setFromNorm('y', 0.82);
+      latchCurrentXY();
       updateControlVisual();
       syncKnobToAudio('xy');
       e.preventDefault();
@@ -488,6 +530,7 @@
     if (dx !== 0 || dy !== 0) {
       setFromNorm('x', getNorm('x') + dx);
       setFromNorm('y', getNorm('y') + dy);
+      latchCurrentXY();
       updateControlVisual();
       syncKnobToAudio('xy');
       e.preventDefault();
@@ -495,17 +538,17 @@
   }
 
   if (synthPanel) {
-    synthPanel.addEventListener('mousedown', onControlStart);
-    synthPanel.addEventListener('touchstart', onControlStart, { passive: false });
+    synthPanel.addEventListener('pointerdown', onControlPointerDown);
+    synthPanel.addEventListener('pointermove', onControlPointerMove);
+    synthPanel.addEventListener('pointerup', onControlPointerEnd);
+    synthPanel.addEventListener('pointercancel', onControlPointerEnd);
     synthPanel.addEventListener('keydown', onControlKeyDown);
   }
-  window.addEventListener('mousemove', onControlMove);
-  window.addEventListener('touchmove', onControlMove, { passive: false });
-  window.addEventListener('mouseup', onControlEnd);
-  window.addEventListener('touchend', onControlEnd);
-  window.addEventListener('touchcancel', onControlEnd);
+  window.addEventListener('pointerup', onControlPointerEnd);
+  window.addEventListener('pointercancel', onControlPointerEnd);
 
   createControls();
+  latchCurrentXY();
 
   // ── Generative Ambient Synth ──
 
@@ -997,25 +1040,37 @@
 
   function buildCrackle(ac, dustBuffer) {
     const output = ac.createGain();
-    output.gain.value = 0.36;
+    output.gain.value = 0.34;
 
     const popBus = ac.createGain();
     const popHP = ac.createBiquadFilter();
     popHP.type = 'highpass';
-    popHP.frequency.value = 820;
+    popHP.frequency.value = 420;
     const popLP = ac.createBiquadFilter();
     popLP.type = 'lowpass';
-    popLP.frequency.value = 9200;
+    popLP.frequency.value = 6800;
 
     const color = ac.createBiquadFilter();
     color.type = 'peaking';
-    color.frequency.value = 2200;
-    color.Q.value = 0.9;
-    color.gain.value = 1.4;
+    color.frequency.value = 1450;
+    color.Q.value = 0.8;
+    color.gain.value = 1.8;
+
+    const warmthTilt = ac.createBiquadFilter();
+    warmthTilt.type = 'lowshelf';
+    warmthTilt.frequency.value = 380;
+    warmthTilt.gain.value = 2.4;
+
+    const hissTrim = ac.createBiquadFilter();
+    hissTrim.type = 'highshelf';
+    hissTrim.frequency.value = 4200;
+    hissTrim.gain.value = -1.8;
 
     popBus.connect(popHP);
     popHP.connect(popLP);
     popLP.connect(color);
+    color.connect(warmthTilt);
+    warmthTilt.connect(hissTrim);
 
     const dustSource = ac.createBufferSource();
     dustSource.buffer = dustBuffer;
@@ -1023,12 +1078,12 @@
 
     const dustHP = ac.createBiquadFilter();
     dustHP.type = 'highpass';
-    dustHP.frequency.value = 1400;
+    dustHP.frequency.value = 520;
     dustHP.Q.value = 0.3;
 
     const dustLP = ac.createBiquadFilter();
     dustLP.type = 'lowpass';
-    dustLP.frequency.value = 9800;
+    dustLP.frequency.value = 6200;
     dustLP.Q.value = 0.2;
 
     const dustGain = ac.createGain();
@@ -1038,10 +1093,22 @@
     dustHP.connect(dustLP);
     dustLP.connect(dustGain);
     dustGain.connect(color);
-    color.connect(output);
+    hissTrim.connect(output);
     dustSource.start();
 
-    return { output, popBus, popHP, popLP, color, dustSource, dustHP, dustLP, dustGain };
+    return {
+      output,
+      popBus,
+      popHP,
+      popLP,
+      color,
+      warmthTilt,
+      hissTrim,
+      dustSource,
+      dustHP,
+      dustLP,
+      dustGain,
+    };
   }
 
   function triggerCrackleBurst() {
@@ -1051,31 +1118,33 @@
     const crackleAmt = getCrackleAmount();
     if (crackleAmt < 0.03) return;
 
-    const clickCount = 1 + Math.floor(Math.random() * (3 + crackleAmt * 9 + warmth * 2));
+    const clickCount = 1 + Math.floor(
+      Math.random() * (2 + crackleAmt * 7 + warmth * 3 + Math.random() * 2)
+    );
     const now = audioCtx.currentTime;
 
     for (let i = 0; i < clickCount; i++) {
-      if (Math.random() > 0.45 + crackleAmt * 0.35 + warmth * 0.12) continue;
+      if (Math.random() > 0.26 + crackleAmt * 0.56 + warmth * 0.18) continue;
 
       const src = audioCtx.createBufferSource();
       src.buffer = crackleNoise;
 
       const hp = audioCtx.createBiquadFilter();
       hp.type = 'highpass';
-      hp.frequency.value = 700 + Math.random() * 3600;
+      hp.frequency.value = 260 + Math.random() * (1800 + (1 - warmth) * 900);
 
       const lp = audioCtx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = 3200 + Math.random() * 5000;
+      lp.frequency.value = 1700 + warmth * 2600 + Math.random() * (2200 + crackleAmt * 2400);
 
       const amp = audioCtx.createGain();
 
-      const start = now + Math.random() * 0.08;
-      const dur = 0.003 + Math.random() * (0.01 + crackleAmt * 0.02 + warmth * 0.01);
-      const peak = (0.0016 + crackleAmt * 0.013 + warmth * 0.0044) * (0.85 + Math.random() * 1.5);
+      const start = now + Math.random() * 0.14;
+      const dur = 0.006 + Math.random() * (0.024 + crackleAmt * 0.03 + warmth * 0.02);
+      const peak = (0.0008 + crackleAmt * 0.009 + warmth * 0.004) * (0.8 + Math.random() * 1.8);
 
       amp.gain.setValueAtTime(0.00001, start);
-      amp.gain.exponentialRampToValueAtTime(peak, start + 0.0009);
+      amp.gain.exponentialRampToValueAtTime(peak, start + 0.0012);
       amp.gain.exponentialRampToValueAtTime(0.00001, start + dur);
 
       src.connect(hp);
@@ -1083,9 +1152,9 @@
       lp.connect(amp);
       amp.connect(crackle.popBus);
 
-      const offset = Math.random() * Math.max(0, crackleNoise.duration - 0.12);
+      const offset = Math.random() * Math.max(0, crackleNoise.duration - 0.18);
       src.start(start, offset);
-      src.stop(start + dur + 0.03);
+      src.stop(start + dur + 0.05);
 
       src.onended = () => {
         src.disconnect();
@@ -1099,15 +1168,30 @@
   function scheduleCrackle() {
     if (!audioActive) return;
 
-    triggerCrackleBurst();
-
-    const world = getWorldIndex();
     const warmth = getWarmth();
     const crackleAmt = getCrackleAmount();
+    const fireChance = clamp(0.54 + crackleAmt * 0.38 + warmth * 0.16, 0.25, 0.98);
+    if (Math.random() < fireChance) {
+      triggerCrackleBurst();
+    }
+
+    if (Math.random() < 0.14 + crackleAmt * 0.26) {
+      const repeats = 1 + Math.floor(Math.random() * (1 + crackleAmt * 3));
+      for (let i = 0; i < repeats; i++) {
+        const clusterDelay = 35 + Math.random() * (130 + warmth * 90);
+        setTimeout(() => {
+          if (!audioActive) return;
+          triggerCrackleBurst();
+        }, clusterDelay);
+      }
+    }
+
+    const world = getWorldIndex();
     const worldRate = world === 0 ? 1.0 : (world === 1 ? 1.08 : (world === 2 ? 0.9 : 1.14));
-    const base = (980 - crackleAmt * 520 - warmth * 140) * worldRate;
-    const jitter = (760 - crackleAmt * 360) * worldRate;
-    const next = Math.max(90, base + Math.random() * Math.max(180, jitter));
+    const base = (1260 - crackleAmt * 640 - warmth * 320) * worldRate;
+    const jitter = (980 - crackleAmt * 420 + Math.random() * 420) * worldRate;
+    const skew = Math.pow(Math.random(), 1.9);
+    const next = Math.max(70, base * (0.34 + skew * 1.9) + Math.random() * Math.max(180, jitter));
 
     crackleTimer = setTimeout(scheduleCrackle, next);
   }
@@ -1229,13 +1313,24 @@
 
     if (crackle) {
       const crackleAmt = getCrackleAmount();
-      crackle.output.gain.setTargetAtTime((0.08 + crackleAmt * 0.82) * worldTone.crackle, now, ramp * 1.2);
-      crackle.popHP.frequency.setTargetAtTime(640 + crackleAmt * 1000, now, ramp);
-      crackle.popLP.frequency.setTargetAtTime(3600 + warmth * 4200 + atmosphere * 1200, now, ramp);
-      crackle.color.gain.setTargetAtTime(0.6 + warmth * 1.4 + crackleAmt * 0.9, now, ramp);
-      crackle.dustGain.gain.setTargetAtTime((0.0003 + crackleAmt * 0.012) * (0.75 + warmth * 0.7), now, ramp);
-      crackle.dustHP.frequency.setTargetAtTime(900 + crackleAmt * 900, now, ramp);
-      crackle.dustLP.frequency.setTargetAtTime(4200 + warmth * 3600 + atmosphere * 1100, now, ramp);
+      crackle.output.gain.setTargetAtTime(
+        (0.06 + crackleAmt * 0.58 + warmth * 0.18) * worldTone.crackle,
+        now,
+        ramp * 1.2
+      );
+      crackle.popHP.frequency.setTargetAtTime(240 + crackleAmt * 480 + (1 - warmth) * 220, now, ramp);
+      crackle.popLP.frequency.setTargetAtTime(2600 + warmth * 2600 + atmosphere * 900, now, ramp);
+      crackle.color.frequency.setTargetAtTime(900 + warmth * 500 + crackleAmt * 450, now, ramp);
+      crackle.color.gain.setTargetAtTime(0.4 + warmth * 2 + crackleAmt * 0.7, now, ramp);
+      if (crackle.warmthTilt) {
+        crackle.warmthTilt.gain.setTargetAtTime(1 + warmth * 3.8, now, ramp);
+      }
+      if (crackle.hissTrim) {
+        crackle.hissTrim.gain.setTargetAtTime(-1.1 - warmth * 1.8, now, ramp);
+      }
+      crackle.dustGain.gain.setTargetAtTime((0.00025 + crackleAmt * 0.009) * (0.9 + warmth * 0.95), now, ramp);
+      crackle.dustHP.frequency.setTargetAtTime(360 + crackleAmt * 560, now, ramp);
+      crackle.dustLP.frequency.setTargetAtTime(3000 + warmth * 2600 + atmosphere * 800, now, ramp);
     }
 
     updateMoodScale();
@@ -2060,6 +2155,7 @@
       const newNorm = minNorm + Math.random() * (maxNorm - minNorm);
       setFromNorm(def.id, newNorm);
     }
+    latchCurrentXY();
     updateControlVisual();
 
     updateMoodScale(true);
