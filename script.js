@@ -557,11 +557,15 @@
   let audioActive = false;
   let masterGain = null;
   let limiter = null;
+  // Core ambience signal path.
   let filter = null;
   let padFilter = null;
   let moodFilter = null;
   let delay = null;
   let delayFeedback = null;
+  let reverb = null;
+
+  // Long-tail character layers.
   let crystalSend = null;
   let crystalDelay = null;
   let crystalFeedback = null;
@@ -577,12 +581,16 @@
   let prismMix = null;
   let prismDepthA = null;
   let prismDepthB = null;
-  let reverb = null;
+
+  // Final color/master chain.
   let warmthShelf = null;
   let warmthLowpass = null;
   let analogDriveIn = null;
   let analogDrive = null;
   let analogPost = null;
+
+  // Texture generators.
+  let tapeBed = null;
   let drone = null;
   let crackle = null;
   let crackleNoise = null;
@@ -590,11 +598,23 @@
   let motifVoices = [];
   let padVoices = [];
   let dropVoices = [];
+
+  // Main schedulers for base generative engine.
   let sequenceTimer = null;
   let harmonyTimer = null;
   let crackleTimer = null;
 
-  const worldRoots = [60, 67, 62, 69]; // C4, G4, D4, A4
+  // Extra process layers inspired by Eno/Glass structures.
+  let enoTimerA = null;
+  let enoTimerB = null;
+  let glassTimer = null;
+  let enoStepA = 0;
+  let enoStepB = 0;
+  let glassStep = 0;
+  let glassPhase = 0;
+
+  // Per-world harmonic centers (MIDI notes): C4, G4, D4, A4.
+  const worldRoots = [60, 67, 62, 69];
   const worldProfiles = [
     // EARTH GARDEN
     [
@@ -621,6 +641,7 @@
       { intervals: [0, 2, 4, 6, 7, 9, 11, 14, 16], progression: [[0, 4, 7, 14, 21], [2, 6, 9, 16, 23], [4, 7, 11, 18, 25], [7, 11, 14, 21, 28], [9, 14, 16, 23, 30]] },
     ],
   ];
+  // Runtime harmonic state.
   let currentRootMidi = worldRoots[0];
   let moodSlot = -1;
   let worldSlot = -1;
@@ -747,7 +768,58 @@
     return note;
   }
 
+  // Stops the additional process layers; called on stop/reset/world change.
+  function clearProcessTimers() {
+    if (enoTimerA) {
+      clearTimeout(enoTimerA);
+      enoTimerA = null;
+    }
+    if (enoTimerB) {
+      clearTimeout(enoTimerB);
+      enoTimerB = null;
+    }
+    if (glassTimer) {
+      clearTimeout(glassTimer);
+      glassTimer = null;
+    }
+  }
+
+  function buildTapeBed(ac) {
+    // Ultra-low-level broadband bed: subtle "air + tape floor".
+    const output = ac.createGain();
+    output.gain.value = 0.00001;
+
+    const source = ac.createBufferSource();
+    source.buffer = createDustBuffer(ac, 8);
+    source.loop = true;
+
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 160;
+    hp.Q.value = 0.25;
+
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 4600;
+    lp.Q.value = 0.4;
+
+    const tone = ac.createBiquadFilter();
+    tone.type = 'peaking';
+    tone.frequency.value = 1200;
+    tone.Q.value = 0.9;
+    tone.gain.value = 0.6;
+
+    source.connect(hp);
+    hp.connect(lp);
+    lp.connect(tone);
+    tone.connect(output);
+    source.start();
+
+    return { source, hp, lp, tone, output };
+  }
+
   function updateMoodScale(force = false) {
+    // Rebuild harmonic material whenever XY crosses mood/world boundaries.
     const world = getWorldIndex();
     const idx = moodIndexFromValue(getMood());
     if (!force && idx === moodSlot && world === worldSlot && scaleNotes.length) return false;
@@ -1199,12 +1271,14 @@
   function applyAmbientSettings(now, ramp = 0.2) {
     if (!audioCtx || !masterGain || !filter || !delay || !delayFeedback || !reverb) return;
 
+    // Macro values derived from the XY pad.
     const atmosphere = getAtmosphere();
     const intensity = getIntensity();
     const mood = getMood();
     const warmth = getWarmth();
     const world = getWorldIndex();
 
+    // Per-world multipliers: one expression model shared by all nodes.
     let worldTone = {
       cutoff: 1,
       wet: 1,
@@ -1232,6 +1306,7 @@
     const feedback = clamp((0.05 + atmosphere * 0.1 + intensity * 0.07 - warmth * 0.03) * worldTone.feedback, 0.04, 0.38);
     const level = (0.38 + intensity * 0.14 - atmosphere * 0.015) * worldTone.level;
 
+    // Main ambience bus.
     filter.frequency.setTargetAtTime(cutoff, now, ramp);
     filter.Q.setTargetAtTime(0.3 + intensity * 0.18 + warmth * 0.04, now, ramp);
     reverb.wetGain.gain.setTargetAtTime(wet, now, ramp);
@@ -1265,9 +1340,18 @@
     }
 
     if (analogDriveIn && analogPost) {
-      // Keep this stage clean; no intentional saturation.
-      analogDriveIn.gain.setTargetAtTime(1, now, ramp * 1.2);
-      analogPost.gain.setTargetAtTime(0.98, now, ramp);
+      // Subtle lo-fi grit inspired by early SAW-era textural roughness.
+      analogDriveIn.gain.setTargetAtTime(1.02 + intensity * 0.14 + (1 - warmth) * 0.1, now, ramp * 1.2);
+      analogPost.gain.setTargetAtTime(0.92 + warmth * 0.08, now, ramp);
+    }
+
+    if (tapeBed) {
+      // Keep texture barely audible; it should be "felt" more than heard.
+      const tapeAmt = clamp(0.00012 + (1 - warmth) * 0.00052 + intensity * 0.00016, 0.00008, 0.0012);
+      tapeBed.output.gain.setTargetAtTime(tapeAmt, now, ramp * 1.4);
+      tapeBed.hp.frequency.setTargetAtTime(110 + (1 - warmth) * 120, now, ramp);
+      tapeBed.lp.frequency.setTargetAtTime(2600 + warmth * 2000 + atmosphere * 900, now, ramp);
+      tapeBed.tone.gain.setTargetAtTime(0.2 + (1 - warmth) * 1.3 + intensity * 0.6, now, ramp);
     }
 
     if (reverb.preDelay && reverb.wetTone && reverb.shimmerShelf && reverb.spaceMix && reverb.spaceDepth) {
@@ -1344,6 +1428,7 @@
       case 'xy':
       case 'x':
       case 'y': {
+        // XY changes can remap the harmonic world, so reschedule phrase layers.
         const changed = updateMoodScale();
         applyAmbientSettings(now, 0.2);
         if (changed) {
@@ -1352,6 +1437,7 @@
             harmonyTimer = null;
           }
           scheduleHarmony();
+          restartProcessLayers();
         }
         break;
       }
@@ -1479,6 +1565,102 @@
         crystalTap.disconnect();
         tone.disconnect();
         pan.disconnect();
+        env.disconnect();
+      } catch (e) { /* noop */ }
+    };
+  }
+
+  function playTapeGhost(freq, level = 1) {
+    if (!audioCtx || !audioActive || !reverb || !filter) return;
+
+    // Fast, slightly distorted ghost note layer (SAW texture accent).
+    const now = audioCtx.currentTime;
+    const atmosphere = getAtmosphere();
+    const intensity = getIntensity();
+    const warmth = getWarmth();
+    const world = getWorldIndex();
+
+    const baseFreq = clamp(freq * (0.9 + Math.random() * 0.2), 70, 1200);
+    const attack = 0.002 + Math.random() * 0.006;
+    const release = 0.14 + (1 - intensity) * 0.28 + atmosphere * 0.1;
+    const peak = (0.0045 + intensity * 0.006 + (1 - warmth) * 0.003) * level;
+
+    const env = audioCtx.createGain();
+    env.gain.setValueAtTime(0.00001, now);
+    env.gain.exponentialRampToValueAtTime(peak, now + attack);
+    env.gain.exponentialRampToValueAtTime(0.00001, now + attack + release);
+
+    const grit = audioCtx.createWaveShaper();
+    grit.curve = makeSoftClipCurve(22 + intensity * 16 + (1 - warmth) * 10);
+    grit.oversample = '2x';
+
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 90 + (1 - warmth) * 120;
+
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 900 + atmosphere * 1700 + world * 220;
+    lp.Q.value = 0.42 + intensity * 0.18;
+
+    const pan = audioCtx.createStereoPanner();
+    pan.pan.value = (Math.random() * 2 - 1) * 0.3;
+
+    const dry = audioCtx.createGain();
+    dry.gain.value = 0.2;
+
+    const wet = audioCtx.createGain();
+    wet.gain.value = 0.46 + atmosphere * 0.2;
+
+    const saw = audioCtx.createOscillator();
+    saw.type = 'sawtooth';
+    saw.frequency.value = baseFreq;
+    saw.detune.value = (Math.random() * 2 - 1) * (6 + intensity * 4);
+
+    const sub = audioCtx.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.value = baseFreq * 0.5;
+    sub.detune.value = (Math.random() * 2 - 1) * 3;
+    const subGain = audioCtx.createGain();
+    subGain.gain.value = 0.38;
+
+    // Wow/flutter style pitch movement.
+    const flutter = audioCtx.createOscillator();
+    flutter.type = 'sine';
+    flutter.frequency.value = 2.6 + Math.random() * 3.6 + intensity * 0.9;
+    const flutterDepth = audioCtx.createGain();
+    flutterDepth.gain.value = 6 + intensity * 8 + (1 - warmth) * 4;
+    flutter.connect(flutterDepth).connect(saw.detune);
+    flutterDepth.connect(sub.detune);
+
+    saw.connect(env);
+    sub.connect(subGain).connect(env);
+    env.connect(grit);
+    grit.connect(hp);
+    hp.connect(lp);
+    lp.connect(pan);
+    pan.connect(dry).connect(filter);
+    pan.connect(wet).connect(reverb.input);
+
+    const stopTime = now + attack + release + 0.08;
+    flutter.start(now);
+    saw.start(now);
+    sub.start(now);
+    flutter.stop(stopTime + 0.02);
+    saw.stop(stopTime);
+    sub.stop(stopTime);
+
+    saw.onended = () => {
+      try {
+        flutter.disconnect();
+        flutterDepth.disconnect();
+        subGain.disconnect();
+        dry.disconnect();
+        wet.disconnect();
+        pan.disconnect();
+        lp.disconnect();
+        hp.disconnect();
+        grit.disconnect();
         env.disconnect();
       } catch (e) { /* noop */ }
     };
@@ -1818,6 +2000,115 @@
     harmonyTimer = setTimeout(scheduleHarmony, base + Math.random() * drift);
   }
 
+  function scheduleEnoLayerA() {
+    if (!audioActive) return;
+
+    // Slow phrase A: long loop cadence, sparse events.
+    const atmosphere = getAtmosphere();
+    const intensity = getIntensity();
+    const world = getWorldIndex();
+
+    if (!scaleNotes.length) {
+      enoTimerA = setTimeout(scheduleEnoLayerA, 1400);
+      return;
+    }
+
+    const phrase = [0, 2, 4, 7, 9, 7, 4, 2, 0, 5, 7, 4];
+    const idxBase = clamp(Math.floor(scaleNotes.length * (0.22 + atmosphere * 0.1)), 1, scaleNotes.length - 2);
+    const idx = clamp(idxBase + phrase[enoStepA % phrase.length], 1, scaleNotes.length - 1);
+    const freq = scaleNotes[idx] * (world === 2 ? 0.98 : 0.74);
+    const level = 0.14 + atmosphere * 0.08;
+    if (Math.random() < 0.72 - intensity * 0.24 + atmosphere * 0.08) {
+      playMotifNote(freq, level);
+      if (Math.random() < 0.2 + atmosphere * 0.22) {
+        playRaindrop(Math.min(freq * 1.5, 2600), level * 0.65);
+      }
+    }
+
+    enoStepA += 1;
+    const nextMs = 5200 + (1 - intensity) * 2400 + (1 - atmosphere) * 1100 + Math.random() * 1900;
+    enoTimerA = setTimeout(scheduleEnoLayerA, nextMs);
+  }
+
+  function scheduleEnoLayerB() {
+    if (!audioActive) return;
+
+    // Slow phrase B: different cycle length for non-repeating overlap.
+    const atmosphere = getAtmosphere();
+    const intensity = getIntensity();
+    const mood = getMood();
+    const world = getWorldIndex();
+
+    if (!scaleNotes.length) {
+      enoTimerB = setTimeout(scheduleEnoLayerB, 2000);
+      return;
+    }
+
+    const phrase = [0, 5, 9, 12, 9, 7, 5, 2, 0, 7, 9, 5];
+    const idxBase = clamp(Math.floor(scaleNotes.length * (0.38 + mood * 0.08)), 2, scaleNotes.length - 2);
+    const idx = clamp(idxBase + phrase[enoStepB % phrase.length], 1, scaleNotes.length - 1);
+    const freq = Math.min(scaleNotes[idx] * (world === 3 ? 1.12 : 1.0), 2600);
+    const level = 0.13 + mood * 0.1;
+    if (Math.random() < 0.62 - intensity * 0.2 + mood * 0.14) {
+      playMotifNote(freq, level);
+      if (Math.random() < 0.18 + atmosphere * 0.2) {
+        playTapeGhost(freq, 0.4 + atmosphere * 0.2);
+      }
+      if (Math.random() < 0.14 + atmosphere * 0.18) {
+        playPadChord();
+      }
+    }
+
+    enoStepB += 1;
+    const nextMs = 7900 + (1 - intensity) * 3200 + atmosphere * 800 + Math.random() * 2800;
+    enoTimerB = setTimeout(scheduleEnoLayerB, nextMs);
+  }
+
+  function scheduleGlassPulse() {
+    if (!audioActive) return;
+
+    // Steady repeating pulse with occasional phase drift.
+    const atmosphere = getAtmosphere();
+    const intensity = getIntensity();
+    const mood = getMood();
+    const world = getWorldIndex();
+    const source = motifCell.length ? motifCell : scaleNotes;
+    if (!source.length) {
+      glassTimer = setTimeout(scheduleGlassPulse, 300);
+      return;
+    }
+
+    const gate = clamp(0.22 + (1 - atmosphere) * 0.22 + (1 - intensity) * 0.18, 0.16, 0.58);
+    const idx = (glassStep + glassPhase) % source.length;
+    const note = source[idx] * (world === 1 ? 1.18 : 1.0);
+    if (Math.random() < gate) {
+      playMotifNote(note, 0.2 + mood * 0.1);
+      if (Math.random() < 0.16 + intensity * 0.24) {
+        playTapeGhost(note * (1.02 + Math.random() * 0.12), 0.3 + intensity * 0.25);
+      }
+    }
+
+    if (glassStep > 0 && glassStep % 8 === 0 && Math.random() < 0.42) {
+      glassPhase = (glassPhase + (Math.random() < 0.7 ? 1 : 2)) % source.length;
+    }
+    glassStep += 1;
+
+    const pulseMs = 420 + (1 - intensity) * 260 + (1 - atmosphere) * 110 + Math.random() * 50;
+    glassTimer = setTimeout(scheduleGlassPulse, pulseMs);
+  }
+
+  function restartProcessLayers() {
+    // Resets phrase counters so harmonic transitions restart coherently.
+    clearProcessTimers();
+    enoStepA = 0;
+    enoStepB = 0;
+    glassStep = 0;
+    glassPhase = 0;
+    scheduleEnoLayerA();
+    scheduleEnoLayerB();
+    scheduleGlassPulse();
+  }
+
   function scheduleNext() {
     if (!audioActive) return;
 
@@ -1851,6 +2142,9 @@
         const root = nextMotifNote();
         const high = Math.min(root * (1.7 + Math.random() * 0.45), 3200);
         playMotifNote(high, 0.66 + intensity * 0.16);
+        if (Math.random() < 0.28 + intensity * 0.2) {
+          playTapeGhost(high * (0.82 + Math.random() * 0.24), 0.36 + intensity * 0.24);
+        }
         if (Math.random() < 0.66) {
           playMotifNote(Math.min(high * 1.34, 4200), 0.3 + atmosphere * 0.12);
         }
@@ -1897,6 +2191,9 @@
       if (Math.random() < eventChance) {
         const root = nextMotifNote();
         playMotifNote(root, 0.72);
+        if (Math.random() < 0.34 + intensity * 0.2) {
+          playTapeGhost(root * (0.94 + Math.random() * 0.22), 0.44 + intensity * 0.2);
+        }
         if (Math.random() < 0.62) {
           playRaindrop(Math.min(root * 2, 4200), 0.32 + atmosphere * 0.14);
         }
@@ -2042,6 +2339,10 @@
     drone = buildDrone(audioCtx);
     drone.output.connect(moodFilter);
 
+    // Low-level tape floor routed post-reverb into final color chain.
+    tapeBed = buildTapeBed(audioCtx);
+    tapeBed.output.connect(analogDriveIn);
+
     crackleNoise = createNoiseBuffer(audioCtx, 2.2);
     crackleDustNoise = createDustBuffer(audioCtx, 5);
     crackle = buildCrackle(audioCtx, crackleDustNoise);
@@ -2055,6 +2356,8 @@
     scheduleNext();
     if (crackleTimer) clearTimeout(crackleTimer);
     scheduleCrackle();
+    // Extra long-form phrase/pulse processes.
+    restartProcessLayers();
   }
 
   function updateAudioParams() {
@@ -2087,6 +2390,7 @@
       clearTimeout(crackleTimer);
       crackleTimer = null;
     }
+    clearProcessTimers();
 
     for (const voice of motifVoices) {
       try {
@@ -2136,6 +2440,9 @@
 
     if (masterGain && audioCtx) {
       const now = audioCtx.currentTime;
+      if (tapeBed) {
+        tapeBed.output.gain.setTargetAtTime(0.00001, now, 0.35);
+      }
       masterGain.gain.setTargetAtTime(0, now, 0.5);
       setTimeout(() => {
         if (audioCtx) audioCtx.suspend();
@@ -2165,6 +2472,8 @@
       harmonyTimer = null;
     }
     scheduleHarmony();
+    // Re-seed long phrase engines after manual randomization.
+    restartProcessLayers();
 
     if (monoSvg) {
       monoSvg.style.transition = 'opacity 0.1s';
@@ -2197,6 +2506,7 @@
           scheduleNext();
           if (crackleTimer) clearTimeout(crackleTimer);
           scheduleCrackle();
+          restartProcessLayers();
         } else {
           initAudio();
         }
