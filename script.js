@@ -47,79 +47,17 @@
   // ── Audio-reactive energy ──
 
   let audioEnergy = 0;
-  const waveDecayRates = []; // per-wave staggered decay
-
-  // Per-voice-type energy for pad visuals
   let droneEnergy = 0;
-  let motifEnergy = 0;
+  let padEnergy = 0;
+  let arpEnergy = 0;
   let textureEnergy = 0;
 
-  // ── Waveforms ──
+  // ── Fog Blobs (replacing dot-grid waveforms) ──
 
-  const waveCount = 8;
-  const waves = [];
-
-  function randomWave() {
-    return {
-      yBase: 0.1 + Math.random() * 0.8,
-      yTarget: 0.1 + Math.random() * 0.8,
-      ySpeed: 0.00002 + Math.random() * 0.00004,
-      opacity: 0.02 + Math.random() * 0.04,
-      freqs: [
-        { freq: 2 + Math.random() * 4, speed: 0.0002 + Math.random() * 0.0004, phase: Math.random() * Math.PI * 2, amp: 0.6 + Math.random() * 0.4 },
-        { freq: 4 + Math.random() * 6, speed: 0.0003 + Math.random() * 0.0005, phase: Math.random() * Math.PI * 2, amp: 0.2 + Math.random() * 0.3 },
-        { freq: 7 + Math.random() * 8, speed: 0.0001 + Math.random() * 0.0003, phase: Math.random() * Math.PI * 2, amp: 0.1 + Math.random() * 0.15 },
-      ],
-      energy: 0,
-    };
-  }
-
-  for (let i = 0; i < waveCount; i++) {
-    waves.push(randomWave());
-    waveDecayRates.push(0.978 + Math.random() * 0.014);
-  }
-
-  function drawWaveform(w, h, t, wave, waveIdx) {
-    const dy = wave.yTarget - wave.yBase;
-    wave.yBase += dy * wave.ySpeed * 16;
-    if (Math.abs(dy) < 0.01) {
-      wave.yTarget = 0.1 + Math.random() * 0.8;
-    }
-
-    wave.energy = wave.energy * waveDecayRates[waveIdx];
-    if (audioEnergy > wave.energy) wave.energy = audioEnergy;
-
-    const e = wave.energy;
-    const opacityBoost = 1 + e * 3;
-    const ampBoost = 1 + e * 1.5;
-    const dotBoost = 1 + e * 0.5;
-
-    const centerY = h * wave.yBase + smoothed.y * h * 0.03;
-    const dotSpacing = 6 * scale;
-    const dotSize = 1.2 * scale * dotBoost;
-
-    for (let x = 0; x < w; x += dotSpacing) {
-      const nx = x / w;
-      let y = 0;
-      for (const f of wave.freqs) {
-        y += Math.sin(nx * f.freq + t * f.speed + f.phase) * f.amp;
-      }
-      y = centerY + y * h * 0.05 * ampBoost;
-
-      const edgeFade = Math.sin(nx * Math.PI);
-      const alpha = wave.opacity * edgeFade * opacityBoost;
-
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.fillRect(x, y, dotSize, dotSize);
-    }
-  }
-
-  // ── Blobs ──
-
-  const blobs = [
-    { cx: 0.3, cy: 0.25, r: 0.4, sx: 0.00025, sy: 0.0002, ox: 0, alpha: 0.008, influence: 0.012 },
-    { cx: 0.7, cy: 0.7, r: 0.35, sx: 0.0002, sy: 0.00028, ox: 1200, alpha: 0.006, influence: 0.01 },
-    { cx: 0.5, cy: 0.45, r: 0.45, sx: 0.00015, sy: 0.00025, ox: 2500, alpha: 0.009, influence: 0.015 },
+  const fogBlobs = [
+    { cx: 0.3, cy: 0.25, r: 0.45, sx: 0.000105, sy: 0.000085, ox: 0, color: [200, 180, 160], alpha: 0.008 },
+    { cx: 0.7, cy: 0.7, r: 0.4, sx: 0.000085, sy: 0.00011, ox: 1200, color: [160, 170, 200], alpha: 0.006 },
+    { cx: 0.5, cy: 0.45, r: 0.5, sx: 0.00007, sy: 0.000095, ox: 2500, color: [180, 175, 170], alpha: 0.007 },
   ];
 
   // ── Background draw ──
@@ -135,29 +73,35 @@
 
     audioEnergy *= 0.985;
     droneEnergy *= 0.992;
-    motifEnergy *= 0.975;
+    padEnergy *= 0.988;
+    arpEnergy *= 0.975;
     textureEnergy *= 0.988;
 
-    for (const b of blobs) {
+    // Draw warm fog blobs — slow drifting, audio-reactive brightness
+    const totalEnergy = Math.max(audioEnergy, droneEnergy * 0.7, padEnergy * 0.8, textureEnergy * 0.5);
+
+    for (const b of fogBlobs) {
+      // Very slow drift: 40-60 second cycles
       const driftX = 0.12 * Math.sin((t + b.ox) * b.sx);
       const driftY = 0.12 * Math.cos((t + b.ox) * b.sy);
 
-      const x = (b.cx + driftX + smoothed.x * b.influence) * w;
-      const y = (b.cy + driftY + smoothed.y * b.influence) * h;
+      const x = (b.cx + driftX + smoothed.x * 0.012) * w;
+      const y = (b.cy + driftY + smoothed.y * 0.012) * h;
       const r = b.r * Math.min(w, h);
 
+      // Audio-reactive: 5-10% brighter with energy
+      const brightnessBoost = 1 + totalEnergy * 0.1;
+      const alpha = b.alpha * brightnessBoost;
+
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, `rgba(255,255,255,${b.alpha})`);
-      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      grad.addColorStop(0, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},${alpha})`);
+      grad.addColorStop(0.5, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},${alpha * 0.4})`);
+      grad.addColorStop(1, `rgba(${b.color[0]},${b.color[1]},${b.color[2]},0)`);
 
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
-    }
-
-    for (let i = 0; i < waves.length; i++) {
-      drawWaveform(w, h, t, waves[i], i);
     }
   }
 
@@ -213,7 +157,8 @@
           const i = (y * sampleW + x) * 4;
           if (data[i + 3] > 128) {
             const angle = Math.random() * Math.PI * 2;
-            const speed = 0.5 + Math.random() * 2.0;
+            // Reduced speed for slower scatter
+            const speed = 0.2 + Math.random() * 0.8;
             particles.push({
               homeX: monoOffsetX + x * dpr * scale,
               homeY: monoOffsetY + y * dpr * scale,
@@ -221,6 +166,9 @@
               y: 0,
               vx: Math.cos(angle) * speed,
               vy: Math.sin(angle) * speed,
+              // Brownian drift offsets
+              bx: 0,
+              by: 0,
               size: (0.6 + Math.random() * 0.6) * dpr * scale,
               alpha: 0.6 + Math.random() * 0.4,
             });
@@ -239,22 +187,11 @@
     setTimeout(sampleMonogram, 200);
   });
 
-  // ── Particle state machine (pointerdown + decay) ──
-  // Replaces mouseenter/mouseleave — works on mobile and desktop.
+  // ── Particle state machine ──
 
-  let particleEnergy = 0; // 0 = assembled, 1 = fully scattered
-
-  // Decay rate per frame depends on active quadrant
-  function getParticleDecayRate() {
-    const q = getDominantQuadrant(getMacroX(), getMacroY());
-    // Tibetan = very slow ~5-8s, Eno = slow ~5s, Glass = medium ~3s, Hainbach = fast ~2s
-    // At 60fps, decay per frame: rate^60 ≈ target after N seconds
-    if (q === 'tibetan') return 0.9955;  // ~7s
-    if (q === 'eno') return 0.993;       // ~5s
-    if (q === 'glass') return 0.985;     // ~3s
-    if (q === 'hainbach') return 0.975;  // ~2s
-    return 0.99;
-  }
+  let particleEnergy = 0;
+  // Uniform decay rate ~0.994 (~6s to reassemble)
+  const PARTICLE_DECAY = 0.994;
 
   if (wrap) {
     wrap.addEventListener('pointerdown', (e) => {
@@ -273,29 +210,27 @@
 
     // Decay particle energy each frame
     if (particleEnergy > 0) {
-      particleEnergy *= getParticleDecayRate();
+      particleEnergy *= PARTICLE_DECAY;
       if (particleEnergy < 0.002) {
         particleEnergy = 0;
         dissolving = false;
       }
     }
 
-    // Smooth dissolve progress — slower scatter, very slow reassembly
+    // Smooth dissolve: scatter over 3-4s, reassemble over 8-10s
     const targetProgress = particleEnergy;
     if (targetProgress > dissolveProgress) {
-      dissolveProgress += (targetProgress - dissolveProgress) * 0.04;
+      dissolveProgress += (targetProgress - dissolveProgress) * 0.018; // ~3-4s scatter
     } else {
-      dissolveProgress += (targetProgress - dissolveProgress) * 0.008;
+      dissolveProgress += (targetProgress - dissolveProgress) * 0.005; // ~8-10s reassemble
     }
 
-    // Snap to zero with wide threshold to avoid glitching
-    if (dissolveProgress < 0.01 && particleEnergy <= 0) {
+    if (dissolveProgress < 0.005 && particleEnergy <= 0) {
       dissolveProgress = 0;
       if (wrap) wrap.classList.remove('dissolving');
       return;
     }
 
-    // Only add dissolving class above a visible threshold
     if (wrap) {
       if (dissolveProgress > 0.02) {
         wrap.classList.add('dissolving');
@@ -305,15 +240,28 @@
     }
 
     const ease = dissolveProgress * dissolveProgress;
-    const spread = Math.max(canvas.width, canvas.height) * 0.6;
+    // Reduced spread radius by 50%
+    const spread = Math.max(canvas.width, canvas.height) * 0.3;
 
     for (const p of particles) {
-      p.x = p.homeX + p.vx * ease * spread;
-      p.y = p.homeY + p.vy * ease * spread;
+      // Slow brownian drift for scattered particles
+      if (ease > 0.05) {
+        p.bx += (Math.random() - 0.5) * 0.3;
+        p.by += (Math.random() - 0.5) * 0.3;
+        p.bx *= 0.98;
+        p.by *= 0.98;
+      } else {
+        p.bx *= 0.95;
+        p.by *= 0.95;
+      }
+
+      p.x = p.homeX + (p.vx * spread + p.bx) * ease;
+      p.y = p.homeY + (p.vy * spread + p.by) * ease;
 
       const alpha = p.alpha * (1 - ease * 0.85);
 
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      // Warm off-white particles
+      ctx.fillStyle = `rgba(232,228,222,${alpha})`;
       ctx.fillRect(p.x, p.y, p.size, p.size);
     }
   }
@@ -354,73 +302,13 @@
     return knobState.y ?? 0.58;
   }
 
-  // ── Quadrant System ──
-  // Layout:
-  //   Y=1 (top): Glass (left) | Tibetan (right)
-  //   Y=0 (bottom): Eno (left) | Hainbach (right)
-
-  function getQuadrantWeights(x, y) {
-    return {
-      eno: (1 - x) * (1 - y),
-      glass: (1 - x) * y,
-      tibetan: x * y,
-      hainbach: x * (1 - y),
-    };
-  }
-
-  function getDominantQuadrant(x, y) {
-    const w = getQuadrantWeights(x, y);
-    let best = 'eno';
-    let bestVal = w.eno;
-    if (w.glass > bestVal) { best = 'glass'; bestVal = w.glass; }
-    if (w.tibetan > bestVal) { best = 'tibetan'; bestVal = w.tibetan; }
-    if (w.hainbach > bestVal) { best = 'hainbach'; }
-    return best;
-  }
-
-  function getControlDescriptor() {
-    const q = getDominantQuadrant(getMacroX(), getMacroY());
-    if (q === 'eno') return 'ENO — Space & Silence';
-    if (q === 'glass') return 'GLASS — Repetition & Pulse';
-    if (q === 'tibetan') return 'TIBETAN — Drones & Overtones';
-    return 'HAINBACH — Texture & Degradation';
-  }
-
   function updateControlVisual() {
     const el = controlElements.xy;
     if (!el) return;
-
-    const x = getMacroX();
-    const y = getMacroY();
-    if (el.dot) {
-      el.dot.style.left = `${Math.round(x * 100)}%`;
-      el.dot.style.top = `${Math.round((1 - y) * 100)}%`;
-    }
-    el.pad.setAttribute('aria-valuetext', getControlDescriptor());
+    el.pad.setAttribute('aria-valuetext', `X: ${Math.round(getMacroX() * 100)}%, Y: ${Math.round(getMacroY() * 100)}%`);
   }
 
-  // Smoothed energy for dot reactivity (avoids jitter)
-  let dotEnergy = 0;
-
-  function updateDotReactivity() {
-    const el = controlElements.xy;
-    if (!el || !el.dot) return;
-
-    // Slow smooth toward audio energy
-    const target = Math.max(audioEnergy, droneEnergy * 0.6, motifEnergy * 0.8, textureEnergy * 0.5);
-    dotEnergy += (target - dotEnergy) * 0.04;
-
-    const e = dotEnergy;
-    const size = 10 + e * 14; // 10px base, up to 24px
-    const glowSpread = 3 + e * 12;
-    const glowAlpha = 0.1 + e * 0.25;
-
-    el.dot.style.width = `${size}px`;
-    el.dot.style.height = `${size}px`;
-    el.dot.style.boxShadow = `0 0 ${10 + e * 16}px ${glowSpread}px rgba(255,255,255,${glowAlpha})`;
-  }
-
-  // ── Pad Canvas Aura ──
+  // ── Pad Canvas — Soft Warm Light ──
 
   let padCanvas = null;
   let padCtx = null;
@@ -450,55 +338,28 @@
     padCtx.arc(cx, cy, radius, 0, Math.PI * 2);
     padCtx.clip();
 
-    // ── Soft ambient base — always breathing ──
-    const baseBreathe = Math.sin(auraTime * 0.002 * Math.PI * 2) * 0.5 + 0.5;
-    const baseAlpha = 0.006 + baseBreathe * 0.004;
-    const baseGrad = padCtx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-    baseGrad.addColorStop(0, `rgba(255,255,255,${baseAlpha})`);
-    baseGrad.addColorStop(0.7, `rgba(255,255,255,${baseAlpha * 0.3})`);
-    baseGrad.addColorStop(1, 'rgba(255,255,255,0)');
-    padCtx.fillStyle = baseGrad;
-    padCtx.fillRect(0, 0, w, h);
-
     if (!audioActive) {
       padCtx.restore();
       return;
     }
 
-    // ── Position glow — soft colored light that follows the dot ──
-    const weights = getQuadrantWeights(x, y);
-    const posColor = [
-      Math.round(weights.eno * 170 + weights.glass * 255 + weights.tibetan * 200 + weights.hainbach * 255),
-      Math.round(weights.eno * 195 + weights.glass * 235 + weights.tibetan * 175 + weights.hainbach * 200),
-      Math.round(weights.eno * 255 + weights.glass * 205 + weights.tibetan * 255 + weights.hainbach * 175),
-    ];
+    // Color shifts with position: warm amber at bottom, cool at top
+    const warmR = Math.round(200 + y * -30 + x * 30);
+    const warmG = Math.round(180 + y * -10 + x * -10);
+    const warmB = Math.round(160 + y * 40 + x * -20);
 
+    const energy = Math.max(droneEnergy * 0.7, padEnergy * 0.8, arpEnergy, textureEnergy * 0.6);
     const breathe = Math.sin(auraTime * 0.003 * Math.PI * 2) * 0.5 + 0.5;
-    const energy = Math.max(droneEnergy * 0.7, motifEnergy, textureEnergy * 0.6);
 
-    // Wide soft glow around position
-    const glowR = radius * (0.35 + energy * 0.3 + breathe * 0.1);
-    const glowAlpha = 0.025 + energy * 0.045 + breathe * 0.01;
+    // Soft warm radial gradient following touch (alpha 0.02-0.06)
+    const glowAlpha = 0.02 + energy * 0.03 + breathe * 0.01;
+    const glowR = radius * (0.4 + energy * 0.25);
     const g1 = padCtx.createRadialGradient(posX, posY, 0, posX, posY, glowR);
-    g1.addColorStop(0, `rgba(${posColor[0]},${posColor[1]},${posColor[2]},${clamp(glowAlpha, 0, 0.1)})`);
-    g1.addColorStop(0.4, `rgba(${posColor[0]},${posColor[1]},${posColor[2]},${clamp(glowAlpha * 0.35, 0, 0.04)})`);
+    g1.addColorStop(0, `rgba(${warmR},${warmG},${warmB},${clamp(glowAlpha, 0, 0.06)})`);
+    g1.addColorStop(0.5, `rgba(${warmR},${warmG},${warmB},${clamp(glowAlpha * 0.3, 0, 0.02)})`);
     g1.addColorStop(1, 'rgba(0,0,0,0)');
     padCtx.fillStyle = g1;
     padCtx.fillRect(0, 0, w, h);
-
-    // Drifting haze — two slow-moving layers
-    for (let i = 0; i < 2; i++) {
-      const driftX = Math.sin(auraTime * (0.0006 + i * 0.0003) * Math.PI * 2 + i * 2.5) * (radius * 0.08);
-      const driftY = Math.cos(auraTime * (0.0008 + i * 0.0002) * Math.PI * 2 + i * 1.8) * (radius * 0.08);
-      const hazeR = glowR * (1.4 + i * 0.5);
-      const hazeAlpha = (0.01 + energy * 0.018) / (i + 1);
-
-      const g2 = padCtx.createRadialGradient(posX + driftX, posY + driftY, 0, posX + driftX, posY + driftY, hazeR);
-      g2.addColorStop(0, `rgba(${posColor[0]},${posColor[1]},${posColor[2]},${clamp(hazeAlpha, 0, 0.05)})`);
-      g2.addColorStop(1, 'rgba(0,0,0,0)');
-      padCtx.fillStyle = g2;
-      padCtx.fillRect(0, 0, w, h);
-    }
 
     padCtx.restore();
   }
@@ -516,28 +377,22 @@
     pad.className = 'xy-pad';
     pad.tabIndex = 0;
     pad.setAttribute('role', 'slider');
-    pad.setAttribute('aria-label', 'Ambient XY control — drag to explore sonic worlds');
+    pad.setAttribute('aria-label', 'Ambient XY control — drag to morph layers');
     pad.setAttribute('aria-valuemin', '0');
     pad.setAttribute('aria-valuemax', '100');
 
-    // Pad canvas for organic aura
     padCanvas = document.createElement('canvas');
     padCanvas.className = 'xy-pad-canvas';
     padCanvas.setAttribute('aria-hidden', 'true');
 
-    // Position dot
-    const dot = document.createElement('div');
-    dot.className = 'xy-dot';
-
+    // No dot element — invisible instrument
     pad.appendChild(padCanvas);
-    pad.appendChild(dot);
     container.appendChild(pad);
     synthPanel.appendChild(container);
 
-    controlElements.xy = { container, pad, dot };
+    controlElements.xy = { container, pad };
     updateControlVisual();
 
-    // Size pad canvas to match pad
     const ro = new ResizeObserver(() => {
       const rect = pad.getBoundingClientRect();
       padCanvas.width = Math.round(rect.width);
@@ -684,21 +539,25 @@
   createControls();
   latchCurrentXY();
 
-  // ── Generative Ambient Synth — 4 Sonic Worlds ──
+  // ═══════════════════════════════════════════════════════
+  // ── AUDIO ENGINE — 4 Simultaneous Layers ──
+  // ═══════════════════════════════════════════════════════
 
   const breatheBtn = document.querySelector('.breathe-btn');
   let audioCtx = null;
   let audioActive = false;
   let masterGain = null;
   let limiter = null;
-  let filter = null;
-  let padFilter = null;
-  let moodFilter = null;
-  let delay = null;
-  let delayFeedback = null;
+  let globalLP = null;
+
+  // Reverb
   let reverb = null;
 
-  // Long-tail character layers
+  // Delay
+  let delay = null;
+  let delayFeedback = null;
+
+  // Crystal/prism delays
   let crystalSend = null;
   let crystalDelay = null;
   let crystalFeedback = null;
@@ -715,7 +574,7 @@
   let prismDepthA = null;
   let prismDepthB = null;
 
-  // Final color/master chain
+  // Final color chain
   let warmthShelf = null;
   let warmthLowpass = null;
   let analogDriveIn = null;
@@ -728,21 +587,23 @@
   let crackleNoise = null;
   let crackleDustNoise = null;
 
-  // Voice arrays
-  let enoVoices = [];
-  let glassVoices = [];
-  let tibetanDrones = null; // persistent drone bank
-  let tibetanBowlTimer = null;
-  let tibetanSweepOsc = null;
-  let hainbachTexture = null; // persistent noise texture
-  let hainbachPopTimer = null;
-  let hainbachToneTimer = null;
+  // Layer references
+  let padLayer = null;
+  let arpLayer = null;
+  let droneLayer = null;
+  let textureLayer = null;
 
-  // Schedulers
-  let activeQuadrant = null;
-  let quadrantScheduler = null;
+  // Chord system
+  let currentChordIdx = 0;
+  let chordRotationTimer = null;
+  let chordTransitioning = false;
+
+  // Crackle
   let crackleTimer = null;
-  let transitionTimeout = null;
+
+  // Tape wow/flutter LFO
+  let tapeWowLfo = null;
+  let tapeWowDepth = null;
 
   function midiToFreq(midi) {
     return 440 * Math.pow(2, (midi - 69) / 12);
@@ -763,12 +624,24 @@
     return curve;
   }
 
-  // Pythagorean tuning ratios (pure 5ths)
-  function pythagoreanFreq(rootHz, interval) {
-    // interval: 0=unison, 7=5th, 12=octave, 19=12th, 24=double-octave
-    const ratios = { 0: 1, 7: 3/2, 12: 2, 19: 3, 24: 4 };
-    return rootHz * (ratios[interval] || Math.pow(2, interval / 12));
+  // ── Chord Palette ──
+  // Key: D major / B minor family (D E F# G A B C#)
+  // All frequencies in Hz
+
+  const CHORDS = [
+    { name: 'Dmaj7',  notes: [73.42, 110.00, 146.83, 185.00, 220.00, 277.18], root: 73.42 },   // D2 A2 D3 F#3 A3 C#4
+    { name: 'Bm7',    notes: [61.74, 92.50, 123.47, 146.83, 220.00], root: 61.74 },              // B1 F#2 B2 D3 A3
+    { name: 'Gmaj9',  notes: [98.00, 123.47, 146.83, 185.00, 220.00], root: 98.00 },             // G2 B2 D3 F#3 A3
+    { name: 'Em7',    notes: [82.41, 123.47, 164.81, 196.00, 293.66], root: 82.41 },              // E2 B2 E3 G3 D4
+    { name: 'Asus4',  notes: [55.00, 82.41, 110.00, 146.83, 164.81], root: 55.00 },              // A1 E2 A2 D3 E3
+    { name: 'F#m7',   notes: [92.50, 138.59, 164.81, 220.00], root: 92.50 },                      // F#2 C#3 E3 A3
+  ];
+
+  function getCurrentChord() {
+    return CHORDS[currentChordIdx % CHORDS.length];
   }
+
+  // ── Reverb (FDN) ──
 
   function buildReverb(ac) {
     const input = ac.createGain();
@@ -776,8 +649,8 @@
     const wetGain = ac.createGain();
     const dryGain = ac.createGain();
 
-    wetGain.gain.value = 0.46;
-    dryGain.gain.value = 0.54;
+    wetGain.gain.value = 0.6;
+    dryGain.gain.value = 0.4;
 
     input.connect(dryGain).connect(output);
 
@@ -895,21 +768,12 @@
     bloomDelay.connect(bloomMix).connect(wetGain);
 
     return {
-      input,
-      output,
-      wetGain,
-      dryGain,
-      preDelay,
-      wetTone,
-      wetHighpass,
-      shimmerShelf,
-      spaceMix,
-      spaceDepth,
-      bloomDelay,
-      bloomFeedback,
-      bloomMix,
+      input, output, wetGain, dryGain, preDelay, wetTone, wetHighpass,
+      shimmerShelf, spaceMix, spaceDepth, bloomDelay, bloomFeedback, bloomMix,
     };
   }
+
+  // ── Noise Buffers ──
 
   function createNoiseBuffer(ac, duration = 2) {
     const length = Math.floor(ac.sampleRate * duration);
@@ -921,7 +785,7 @@
     return buffer;
   }
 
-  function createDustBuffer(ac, duration = 4) {
+  function createBrownNoiseBuffer(ac, duration = 4) {
     const length = Math.floor(ac.sampleRate * duration);
     const buffer = ac.createBuffer(1, length, ac.sampleRate);
     const data = buffer.getChannelData(0);
@@ -934,12 +798,33 @@
     return buffer;
   }
 
+  function createPinkNoiseBuffer(ac, duration = 4) {
+    const length = Math.floor(ac.sampleRate * duration);
+    const buffer = ac.createBuffer(1, length, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < length; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+      b6 = white * 0.115926;
+    }
+    return buffer;
+  }
+
+  // ── Tape Bed ──
+
   function buildTapeBed(ac) {
     const output = ac.createGain();
     output.gain.value = 0.00001;
 
     const source = ac.createBufferSource();
-    source.buffer = createDustBuffer(ac, 8);
+    source.buffer = createBrownNoiseBuffer(ac, 8);
     source.loop = true;
 
     const hp = ac.createBiquadFilter();
@@ -966,6 +851,8 @@
 
     return { source, hp, lp, tone, output };
   }
+
+  // ── Crackle System ──
 
   function buildCrackle(ac, dustBuffer) {
     const output = ac.createGain();
@@ -1034,9 +921,9 @@
   function triggerCrackleBurst() {
     if (!audioCtx || !audioActive || !crackleNode || !crackleNoise) return;
 
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const crackleAmt = weights.hainbach * 0.9 + weights.eno * 0.4 + weights.glass * 0.1 + weights.tibetan * 0.05;
-    if (crackleAmt < 0.03) return;
+    const x = getMacroX();
+    const crackleAmt = 0.1 + x * 0.8; // X controls crackle density
+    if (crackleAmt < 0.05) return;
 
     const clickCount = 1 + Math.floor(Math.random() * (2 + crackleAmt * 8));
     const now = audioCtx.currentTime;
@@ -1086,8 +973,8 @@
   function scheduleCrackle() {
     if (!audioActive) return;
 
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const crackleAmt = weights.hainbach * 0.9 + weights.eno * 0.4 + weights.glass * 0.1 + weights.tibetan * 0.05;
+    const x = getMacroX();
+    const crackleAmt = 0.1 + x * 0.8;
 
     if (Math.random() < 0.3 + crackleAmt * 0.5) {
       triggerCrackleBurst();
@@ -1098,1062 +985,729 @@
     crackleTimer = setTimeout(scheduleCrackle, Math.max(80, base + Math.random() * jitter));
   }
 
-  // ═══════════════════════════════════════════════════
-  // ── ENO QUADRANT — Space & Silence (Bottom-Left) ──
-  // ═══════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════
+  // ── PAD LAYER — Thick Detuned Sawtooth Chords ──
+  // ═══════════════════════════════════════════════
 
-  // Root D3 (MIDI 50, ~146.83 Hz) — warm, not too low
-  const ENO_ROOT = 146.83;
-  // D major pentatonic across octaves: D E F# A B — all consonant, open, positive
-  // Frequencies pre-computed as ratios from root (just-intonation leaning)
-  const ENO_SCALE = [
-    1,        // D3
-    9/8,      // E3
-    5/4,      // F#3 (just major 3rd)
-    3/2,      // A3
-    5/3,      // B3 (just major 6th)
-    2,        // D4
-    9/4,      // E4
-    5/2,      // F#4
-    3,        // A4
-    10/3,     // B4
-    4,        // D5
-  ];
-  // Each tape loop has a melodic phrase — stepwise motion, always resolving home
-  const ENO_PHRASES = [
-    [0, 2, 4, 3, 1, 0],          // ascending 3rd, gentle fall home
-    [5, 4, 3, 4, 5],             // high octave, rocking motion
-    [0, 3, 5, 3, 0],             // root-5th-octave arch
-    [2, 4, 6, 5, 3, 2],          // middle register melody
-  ];
-  let enoPhaseSteps = [0, 0, 0, 0];
+  // Per chord note: 3 sawtooth oscs detuned (0, +7, -5 cents)
+  // Shared LP filter, Juno chorus, slow LFO on cutoff
 
-  // Coprime-ish tape loop lengths (seconds)
-  const ENO_LOOP_TIMES = [17.3, 23.7, 31.1, 41.9];
-  let enoLoopTimers = [];
-
-  function playTapeTone(freq, loopIdx) {
-    if (!audioCtx || !audioActive || !reverb || !filter) return;
-
-    // 20-40% silence probability
-    if (Math.random() < 0.3) return;
-
-    droneEnergy = Math.max(droneEnergy, 0.4);
-    audioEnergy = Math.max(audioEnergy, 0.3);
-
-    const now = audioCtx.currentTime;
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const enoWeight = weights.eno;
-
-    // Long attack 2-6s, sustain 8-20s, release 4-10s
-    const attack = 2 + Math.random() * 4;
-    const sustain = 8 + Math.random() * 12;
-    const release = 4 + Math.random() * 6;
-    const peak = (0.018 + Math.random() * 0.012) * enoWeight;
-
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.00001, now);
-    env.gain.exponentialRampToValueAtTime(peak, now + attack);
-    env.gain.setValueAtTime(peak, now + attack + sustain);
-    env.gain.exponentialRampToValueAtTime(0.00001, now + attack + sustain + release);
-
-    // Main sine tone
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-
-    // Pitch drift (tape wow) 3-8 cents
-    const driftLfo = audioCtx.createOscillator();
-    driftLfo.type = 'sine';
-    driftLfo.frequency.value = 0.02 + Math.random() * 0.04; // 0.02-0.06 Hz
-    const driftDepth = audioCtx.createGain();
-    driftDepth.gain.value = 3 + Math.random() * 5; // 3-8 cents
-    driftLfo.connect(driftDepth).connect(osc.detune);
-
-    // Amplitude LFO (gentle breathing)
-    const ampLfo = audioCtx.createOscillator();
-    ampLfo.type = 'sine';
-    ampLfo.frequency.value = 0.02 + Math.random() * 0.04;
-    const ampDepth = audioCtx.createGain();
-    ampDepth.gain.value = peak * 0.3;
-    ampLfo.connect(ampDepth).connect(env.gain);
-
-    // Octave harmonic at 8% gain
-    const harmonic = audioCtx.createOscillator();
-    harmonic.type = 'sine';
-    harmonic.frequency.value = freq * 2;
-    const harmonicGain = audioCtx.createGain();
-    harmonicGain.gain.value = 0.08;
-    driftDepth.connect(harmonic.detune);
-
-    const pan = audioCtx.createStereoPanner();
-    pan.pan.value = (Math.random() * 2 - 1) * 0.5;
-
-    // Reverb send (60-80% wet for Eno)
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.25;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.7;
-
-    osc.connect(env);
-    harmonic.connect(harmonicGain).connect(env);
-    env.connect(pan);
-    pan.connect(dry).connect(filter);
-    pan.connect(wet).connect(reverb.input);
-
-    if (crystalSend) {
-      const tap = audioCtx.createGain();
-      tap.gain.value = 0.03;
-      pan.connect(tap).connect(crystalSend);
-    }
-
-    const stopTime = now + attack + sustain + release + 0.1;
-    osc.start(now);
-    harmonic.start(now);
-    driftLfo.start(now);
-    ampLfo.start(now);
-    osc.stop(stopTime);
-    harmonic.stop(stopTime);
-    driftLfo.stop(stopTime + 0.02);
-    ampLfo.stop(stopTime + 0.02);
-
-    const voice = { env, nodes: [osc, harmonic, driftLfo, ampLfo], pan, dry, wet, harmonicGain, driftDepth, ampDepth };
-    enoVoices.push(voice);
-
-    while (enoVoices.length > 8) {
-      const old = enoVoices.shift();
-      try {
-        old.env.gain.cancelScheduledValues(audioCtx.currentTime);
-        old.env.gain.setValueAtTime(old.env.gain.value, audioCtx.currentTime);
-        old.env.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 2);
-        for (const node of old.nodes) node.stop(audioCtx.currentTime + 2.1);
-      } catch (e) { /* noop */ }
-    }
-
-    osc.onended = () => {
-      const idx = enoVoices.indexOf(voice);
-      if (idx !== -1) enoVoices.splice(idx, 1);
-      try {
-        harmonicGain.disconnect();
-        driftDepth.disconnect();
-        ampDepth.disconnect();
-        dry.disconnect();
-        wet.disconnect();
-        pan.disconnect();
-        env.disconnect();
-      } catch (e) { /* noop */ }
-    };
-  }
-
-  function scheduleEnoLoop(loopIdx) {
-    if (!audioActive) return;
-    if (getDominantQuadrant(getMacroX(), getMacroY()) !== 'eno') return;
-
-    // Walk through this loop's melodic phrase
-    const phrase = ENO_PHRASES[loopIdx % ENO_PHRASES.length];
-    const step = enoPhaseSteps[loopIdx] % phrase.length;
-    const scaleIdx = phrase[step];
-    const ratio = ENO_SCALE[clamp(scaleIdx, 0, ENO_SCALE.length - 1)];
-    const freq = ENO_ROOT * ratio;
-
-    playTapeTone(freq, loopIdx);
-
-    // Occasionally play a consonant pair (5th or octave above)
-    if (Math.random() < 0.25) {
-      const pairIdx = clamp(scaleIdx + 3, 0, ENO_SCALE.length - 1); // roughly a 5th up
-      const pairFreq = ENO_ROOT * ENO_SCALE[pairIdx];
-      setTimeout(() => {
-        if (!audioActive) return;
-        playTapeTone(pairFreq, loopIdx);
-      }, 2000 + Math.random() * 2000);
-    }
-
-    enoPhaseSteps[loopIdx]++;
-
-    enoLoopTimers[loopIdx] = setTimeout(() => scheduleEnoLoop(loopIdx), ENO_LOOP_TIMES[loopIdx] * 1000);
-  }
-
-  function startEnoScheduler() {
-    stopEnoScheduler();
-    for (let i = 0; i < ENO_LOOP_TIMES.length; i++) {
-      // Stagger starts
-      const startDelay = Math.random() * ENO_LOOP_TIMES[i] * 500;
-      enoLoopTimers[i] = setTimeout(() => scheduleEnoLoop(i), startDelay);
-    }
-  }
-
-  function stopEnoScheduler() {
-    for (let i = 0; i < enoLoopTimers.length; i++) {
-      if (enoLoopTimers[i]) clearTimeout(enoLoopTimers[i]);
-    }
-    enoLoopTimers = [];
-    // Voices complete naturally via their envelopes
-  }
-
-  // ═══════════════════════════════════════════════════════
-  // ── GLASS QUADRANT — Repetition & Pulse (Top-Left) ──
-  // ═══════════════════════════════════════════════════════
-
-  // Root C4 (MIDI 60, 261.63 Hz) — C Lydian: C D E F# G A B — bright, uplifting
-  const GLASS_ROOT = 261.63;
-  // Lydian scale in semitones — every note is consonant and positive
-  const GLASS_SCALE = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 19, 23, 24];
-
-  // Pre-composed arpeggio patterns (indices into GLASS_SCALE) — all melodic, all in-key
-  const GLASS_PATTERNS = [
-    [0, 2, 4, 6, 4, 2],             // ascending Cmaj7 arpeggio
-    [0, 4, 7, 4, 2, 4],             // C-G-C' rocking
-    [7, 6, 4, 2, 0, 2, 4],          // descending from octave
-    [0, 2, 4, 7, 9, 7, 4, 2],       // wide arch up to D5
-    [4, 2, 0, 2, 4, 6, 7],          // Glass-style additive climb
-    [0, 4, 2, 6, 4, 7],             // interlocking 3rds
-    [7, 4, 6, 2, 4, 0],             // descending interlocking
-    [0, 2, 7, 4, 9, 7, 4, 2],       // wide leaps, always in-key
-  ];
-
-  let glassPattern = [];
-  let glassStepIdx = 0;
-  let glassStepCount = 0;
-  let glassMutationCount = 0;
-  let glassTimer = null;
-  let glassStepMs = 400;
-
-  function buildGlassPattern() {
-    // Pick a pre-composed melodic pattern
-    return GLASS_PATTERNS[Math.floor(Math.random() * GLASS_PATTERNS.length)].slice();
-  }
-
-  function mutateGlassPattern() {
-    if (!glassPattern.length) return;
-    const r = Math.random();
-    if (r < 0.4) {
-      // Reverse — always stays in key
-      glassPattern.reverse();
-    } else if (r < 0.7) {
-      // Rotate start point
-      const rot = 1 + Math.floor(Math.random() * (glassPattern.length - 1));
-      glassPattern = [...glassPattern.slice(rot), ...glassPattern.slice(0, rot)];
-    } else {
-      // Shift all indices up by 2 (move up a 3rd in the scale) — stays in key
-      glassPattern = glassPattern.map(n => Math.min(n + 2, GLASS_SCALE.length - 1));
-    }
-  }
-
-  function playPulseNote(freq) {
-    if (!audioCtx || !audioActive || !filter || !reverb) return;
-
-    motifEnergy = Math.max(motifEnergy, 0.6);
-    audioEnergy = Math.max(audioEnergy, 0.5);
-
-    const now = audioCtx.currentTime;
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const glassWeight = weights.glass;
-
-    // Fast attack (10-30ms), short sustain (100-300ms), medium release (400-800ms)
-    const attack = 0.01 + Math.random() * 0.02;
-    const sustain = 0.1 + Math.random() * 0.2;
-    const release = 0.4 + Math.random() * 0.4;
-    const peak = (0.025 + Math.random() * 0.015) * glassWeight;
-
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.00001, now);
-    env.gain.exponentialRampToValueAtTime(peak, now + attack);
-    env.gain.setValueAtTime(peak, now + attack + sustain);
-    env.gain.exponentialRampToValueAtTime(0.00001, now + attack + sustain + release);
-
-    // Triangle + detuned sine (2 cents)
-    const tri = audioCtx.createOscillator();
-    tri.type = 'triangle';
-    tri.frequency.value = freq;
-
-    const sine = audioCtx.createOscillator();
-    sine.type = 'sine';
-    sine.frequency.value = freq;
-    sine.detune.value = 2;
-
-    // Octave-up shade voice at 30% gain, 50% probability
-    let shade = null;
-    let shadeGain = null;
-    if (Math.random() < 0.5) {
-      shade = audioCtx.createOscillator();
-      shade.type = 'sine';
-      shade.frequency.value = freq * 2;
-      shade.detune.value = -1;
-      shadeGain = audioCtx.createGain();
-      shadeGain.gain.value = 0.3;
-    }
-
-    const pan = audioCtx.createStereoPanner();
-    pan.pan.value = (Math.random() * 2 - 1) * 0.35;
-
-    // Reverb 30-45% wet, synced delay
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.62;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.38;
-
-    tri.connect(env);
-    sine.connect(env);
-    if (shade && shadeGain) {
-      shade.connect(shadeGain).connect(env);
-    }
-    env.connect(pan);
-    pan.connect(dry).connect(filter);
-    pan.connect(wet).connect(reverb.input);
-
-    if (crystalSend) {
-      const tap = audioCtx.createGain();
-      tap.gain.value = 0.08;
-      pan.connect(tap).connect(crystalSend);
-    }
-
-    const stopTime = now + attack + sustain + release + 0.08;
-    const nodes = [tri, sine];
-    tri.start(now);
-    sine.start(now);
-    tri.stop(stopTime);
-    sine.stop(stopTime);
-    if (shade) {
-      shade.start(now);
-      shade.stop(stopTime);
-      nodes.push(shade);
-    }
-
-    const voice = { env, nodes, pan, dry, wet };
-    glassVoices.push(voice);
-
-    while (glassVoices.length > 12) {
-      const old = glassVoices.shift();
-      try {
-        old.env.gain.cancelScheduledValues(audioCtx.currentTime);
-        old.env.gain.setValueAtTime(old.env.gain.value, audioCtx.currentTime);
-        old.env.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
-        for (const node of old.nodes) node.stop(audioCtx.currentTime + 0.25);
-      } catch (e) { /* noop */ }
-    }
-
-    tri.onended = () => {
-      const idx = glassVoices.indexOf(voice);
-      if (idx !== -1) glassVoices.splice(idx, 1);
-      try {
-        if (shadeGain) shadeGain.disconnect();
-        dry.disconnect();
-        wet.disconnect();
-        pan.disconnect();
-        env.disconnect();
-      } catch (e) { /* noop */ }
-    };
-  }
-
-  function scheduleGlassStep() {
-    if (!audioActive) return;
-    if (getDominantQuadrant(getMacroX(), getMacroY()) !== 'glass') return;
-
-    if (!glassPattern.length) {
-      glassPattern = buildGlassPattern();
-      glassStepIdx = 0;
-      glassStepCount = 0;
-      glassMutationCount = 0;
-    }
-
-    const scaleIdx = glassPattern[glassStepIdx % glassPattern.length];
-    const semi = GLASS_SCALE[clamp(scaleIdx, 0, GLASS_SCALE.length - 1)];
-    const freq = GLASS_ROOT * Math.pow(2, semi / 12);
-    playPulseNote(freq);
-
-    glassStepIdx++;
-    glassStepCount++;
-
-    // Pattern mutates every 16-32 steps
-    const mutateThreshold = 16 + Math.floor(Math.random() * 17);
-    if (glassStepCount >= mutateThreshold) {
-      glassMutationCount++;
-      if (glassMutationCount > 3) {
-        // Build entirely new pattern after a few mutations
-        glassPattern = buildGlassPattern();
-        glassStepIdx = 0;
-        glassMutationCount = 0;
-      } else {
-        mutateGlassPattern();
-      }
-      glassStepCount = 0;
-    }
-
-    // Step timing: 300-600ms
-    glassStepMs = 300 + Math.random() * 300;
-    glassTimer = setTimeout(scheduleGlassStep, glassStepMs);
-  }
-
-  function startGlassScheduler() {
-    stopGlassScheduler();
-    glassPattern = buildGlassPattern();
-    glassStepIdx = 0;
-    glassStepCount = 0;
-    glassMutationCount = 0;
-    scheduleGlassStep();
-  }
-
-  function stopGlassScheduler() {
-    if (glassTimer) clearTimeout(glassTimer);
-    glassTimer = null;
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // ── TIBETAN QUADRANT — Drones & Overtones (Top-Right) ──
-  // ═══════════════════════════════════════════════════════════
-
-  // Root C2 (MIDI 36, ~65.41 Hz), Pythagorean tuning
-  const TIBETAN_ROOT = 65.41;
-
-  function buildTibetanDrones(ac) {
-    // 5 persistent sine oscillators: root, 5th, octave, 12th, double-octave
-    // Intentional detuning for beating
-    const intervals = [1, 3/2, 2, 3, 4]; // Pythagorean ratios
-    const detunes = [5, -3, 8, -6, 4]; // cents
-
+  function buildPadLayer(ac) {
     const output = ac.createGain();
-    output.gain.value = 0.00001; // start silent, ramp up
+    output.gain.value = 0.00001;
+
+    // Shared LP filter for all pad voices
+    const lpFilter = ac.createBiquadFilter();
+    lpFilter.type = 'lowpass';
+    lpFilter.frequency.value = 1500;
+    lpFilter.Q.value = 2;
+
+    // Slow LFO on cutoff (0.05 Hz, +-200Hz)
+    const filterLfo = ac.createOscillator();
+    filterLfo.type = 'sine';
+    filterLfo.frequency.value = 0.05;
+    const filterDepth = ac.createGain();
+    filterDepth.gain.value = 200;
+    filterLfo.connect(filterDepth).connect(lpFilter.frequency);
+    filterLfo.start();
+
+    // Juno chorus: short delay with triangle LFO
+    const chorusDelay = ac.createDelay(0.02);
+    chorusDelay.delayTime.value = 0.003;
+    const chorusLfo = ac.createOscillator();
+    chorusLfo.type = 'triangle';
+    chorusLfo.frequency.value = 0.5;
+    const chorusDepth = ac.createGain();
+    chorusDepth.gain.value = 0.002; // 1-2ms depth
+    chorusLfo.connect(chorusDepth).connect(chorusDelay.delayTime);
+    chorusLfo.start();
+
+    const chorusMix = ac.createGain();
+    chorusMix.gain.value = 0.5;
+    const directMix = ac.createGain();
+    directMix.gain.value = 0.5;
+
+    // Routing: voices → lpFilter → [direct + chorus] → output
+    lpFilter.connect(directMix).connect(output);
+    lpFilter.connect(chorusDelay);
+    chorusDelay.connect(chorusMix).connect(output);
+
+    // Voice management
+    const voices = [];
+
+    function setChord(chord, fadeTime = 5) {
+      const now = ac.currentTime;
+
+      // Fade out old voices
+      for (const v of voices) {
+        v.env.gain.setTargetAtTime(0.00001, now, fadeTime * 0.3);
+        const oscs = v.oscs;
+        setTimeout(() => {
+          try {
+            for (const o of oscs) o.stop();
+            v.env.disconnect();
+          } catch (e) { /* noop */ }
+        }, fadeTime * 1000 + 2000);
+      }
+      voices.length = 0;
+
+      // Create new voices for each chord note
+      for (const freq of chord.notes) {
+        const env = ac.createGain();
+        env.gain.setValueAtTime(0.00001, now);
+        // Attack 1.5-3s
+        const attack = 1.5 + Math.random() * 1.5;
+        const peakGain = 0.04 / chord.notes.length; // distribute gain
+        env.gain.setTargetAtTime(peakGain, now, attack * 0.3);
+
+        const oscs = [];
+
+        // 3 detuned sawtooth oscillators per note
+        const detunes = [0, 7, -5];
+        for (const detune of detunes) {
+          const osc = ac.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.value = freq;
+          osc.detune.value = detune;
+
+          // Connect tape wow/flutter if available
+          if (tapeWowDepth) {
+            tapeWowDepth.connect(osc.detune);
+          }
+
+          const oscGain = ac.createGain();
+          oscGain.gain.value = 0.33; // equal mix of 3 saws
+          osc.connect(oscGain).connect(env);
+          osc.start(now);
+          oscs.push(osc);
+        }
+
+        env.connect(lpFilter);
+        voices.push({ env, oscs, freq });
+      }
+    }
+
+    function stop(fadeTime = 6) {
+      const now = ac.currentTime;
+      for (const v of voices) {
+        v.env.gain.setTargetAtTime(0.00001, now, fadeTime * 0.3);
+        const oscs = v.oscs;
+        setTimeout(() => {
+          try {
+            for (const o of oscs) o.stop();
+            v.env.disconnect();
+          } catch (e) { /* noop */ }
+        }, fadeTime * 1000 + 2000);
+      }
+      voices.length = 0;
+      try {
+        filterLfo.stop();
+        chorusLfo.stop();
+      } catch (e) { /* noop */ }
+    }
+
+    return { output, lpFilter, filterLfo, filterDepth, voices, setChord, stop };
+  }
+
+  // ═══════════════════════════════════════════
+  // ── ARPEGGIO LAYER — Glass-style Patterns ──
+  // ═══════════════════════════════════════════
+
+  const ARP_PATTERNS = [
+    [0, 1, 2, 3, 2, 1],           // arch ascending
+    [0, 2, 4, 2, 0],              // wide arch
+    [0, 1, 3, 1, 2, 0],           // interlocking 3rds
+    [0, 2, 1, 3, 2, 4, 3],        // ascending interlocking
+    [3, 2, 1, 0, 1, 2],           // descending arch
+    [0, 3, 1, 4, 2],              // leaping
+    [0, 1, 2, 3, 4, 3, 2, 1],     // full arch
+    [0, 2, 4, 3, 1, 0],           // descending skip
+  ];
+
+  function buildArpLayer(ac) {
+    const output = ac.createGain();
+    output.gain.value = 0.00001;
+
+    let pattern = ARP_PATTERNS[Math.floor(Math.random() * ARP_PATTERNS.length)].slice();
+    let stepIdx = 0;
+    let stepCount = 0;
+    let mutationCount = 0;
+    let timer = null;
+    let running = false;
+    let currentNotes = []; // note frequencies from current chord
+    let arpVoices = [];
+
+    function setNotes(chord) {
+      currentNotes = chord.notes.slice();
+    }
+
+    function mutatePattern() {
+      const r = Math.random();
+      if (r < 0.4) {
+        pattern.reverse();
+      } else if (r < 0.7) {
+        const rot = 1 + Math.floor(Math.random() * (pattern.length - 1));
+        pattern = [...pattern.slice(rot), ...pattern.slice(0, rot)];
+      } else {
+        pattern = pattern.map(n => Math.min(n + 1, currentNotes.length - 1));
+      }
+    }
+
+    function playNote(freq) {
+      if (!ac || !audioActive) return;
+
+      arpEnergy = Math.max(arpEnergy, 0.6);
+      audioEnergy = Math.max(audioEnergy, 0.4);
+
+      const now = ac.currentTime;
+
+      // Triangle + detuned sine
+      const tri = ac.createOscillator();
+      tri.type = 'triangle';
+      tri.frequency.value = freq;
+
+      const sine = ac.createOscillator();
+      sine.type = 'sine';
+      sine.frequency.value = freq;
+      sine.detune.value = 2;
+
+      // Tape wow
+      if (tapeWowDepth) {
+        tapeWowDepth.connect(tri.detune);
+        tapeWowDepth.connect(sine.detune);
+      }
+
+      // Octave-up sine at 25% volume, 40% probability
+      let shade = null;
+      let shadeGain = null;
+      if (Math.random() < 0.4) {
+        shade = ac.createOscillator();
+        shade.type = 'sine';
+        shade.frequency.value = freq * 2;
+        shade.detune.value = -1;
+        shadeGain = ac.createGain();
+        shadeGain.gain.value = 0.25;
+      }
+
+      // Fast attack 10ms, sustain 200ms, release 600ms
+      const attack = 0.01;
+      const sustain = 0.2;
+      const release = 0.6;
+      const peak = 0.035;
+
+      const env = ac.createGain();
+      env.gain.setValueAtTime(0.00001, now);
+      env.gain.exponentialRampToValueAtTime(peak, now + attack);
+      env.gain.setValueAtTime(peak, now + attack + sustain);
+      env.gain.exponentialRampToValueAtTime(0.00001, now + attack + sustain + release);
+
+      const pan = ac.createStereoPanner();
+      pan.pan.value = (Math.random() * 2 - 1) * 0.35;
+
+      tri.connect(env);
+      sine.connect(env);
+      if (shade && shadeGain) {
+        shade.connect(shadeGain).connect(env);
+      }
+      env.connect(pan).connect(output);
+
+      // Send to crystal delay
+      if (crystalSend) {
+        const tap = ac.createGain();
+        tap.gain.value = 0.06;
+        pan.connect(tap).connect(crystalSend);
+      }
+
+      const stopTime = now + attack + sustain + release + 0.08;
+      tri.start(now);
+      sine.start(now);
+      tri.stop(stopTime);
+      sine.stop(stopTime);
+      if (shade) {
+        shade.start(now);
+        shade.stop(stopTime);
+      }
+
+      const voice = { env, nodes: [tri, sine, shade].filter(Boolean) };
+      arpVoices.push(voice);
+
+      // Limit voice count
+      while (arpVoices.length > 10) {
+        const old = arpVoices.shift();
+        try {
+          for (const n of old.nodes) n.stop(ac.currentTime + 0.05);
+        } catch (e) { /* noop */ }
+      }
+
+      tri.onended = () => {
+        const idx = arpVoices.indexOf(voice);
+        if (idx !== -1) arpVoices.splice(idx, 1);
+        try {
+          if (shadeGain) shadeGain.disconnect();
+          pan.disconnect();
+          env.disconnect();
+        } catch (e) { /* noop */ }
+      };
+    }
+
+    function step() {
+      if (!running || !audioActive) return;
+      if (currentNotes.length === 0) {
+        timer = setTimeout(step, 400);
+        return;
+      }
+
+      const noteIdx = pattern[stepIdx % pattern.length] % currentNotes.length;
+      const freq = currentNotes[noteIdx];
+      playNote(freq);
+
+      stepIdx++;
+      stepCount++;
+
+      // Mutate every 16-32 steps
+      const mutateThreshold = 16 + Math.floor(Math.random() * 17);
+      if (stepCount >= mutateThreshold) {
+        mutationCount++;
+        if (mutationCount > 3) {
+          pattern = ARP_PATTERNS[Math.floor(Math.random() * ARP_PATTERNS.length)].slice();
+          stepIdx = 0;
+          mutationCount = 0;
+        } else {
+          mutatePattern();
+        }
+        stepCount = 0;
+      }
+
+      // Step rate: Y controls speed (200-500ms)
+      const y = getMacroY();
+      const stepMs = 500 - y * 300; // Y=0→500ms, Y=1→200ms
+      timer = setTimeout(step, stepMs);
+    }
+
+    function start() {
+      running = true;
+      step();
+    }
+
+    function stop() {
+      running = false;
+      if (timer) clearTimeout(timer);
+      timer = null;
+    }
+
+    return { output, setNotes, start, stop };
+  }
+
+  // ═══════════════════════════════════════════
+  // ── DRONE LAYER — Tibetan Singing Bowls ──
+  // ═══════════════════════════════════════════
+
+  function buildDroneLayer(ac) {
+    const output = ac.createGain();
+    output.gain.value = 0.00001;
 
     const oscs = [];
     const gains = [];
+    let bowlTimer = null;
+    let currentRoot = 73.42; // D2
 
-    for (let i = 0; i < intervals.length; i++) {
-      const freq = TIBETAN_ROOT * intervals[i];
-      const osc = ac.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      osc.detune.value = detunes[i];
-
-      const gain = ac.createGain();
-      // Higher partials quieter
-      gain.gain.value = i === 0 ? 0.4 : (i === 1 ? 0.25 : (i === 2 ? 0.2 : (i === 3 ? 0.1 : 0.06)));
-
-      osc.connect(gain).connect(output);
-      osc.start();
-      oscs.push(osc);
-      gains.push(gain);
-    }
-
-    // Slow overtone sweep filter (0.005 Hz)
+    // Overtone sweep filter
     const sweepFilter = ac.createBiquadFilter();
     sweepFilter.type = 'peaking';
     sweepFilter.frequency.value = 400;
     sweepFilter.Q.value = 3;
-    sweepFilter.gain.value = 8;
+    sweepFilter.gain.value = 6;
 
     const sweepLfo = ac.createOscillator();
     sweepLfo.type = 'sine';
     sweepLfo.frequency.value = 0.005;
     const sweepDepth = ac.createGain();
-    sweepDepth.gain.value = 600;
+    sweepDepth.gain.value = 500; // 200-1200Hz range
     sweepLfo.connect(sweepDepth).connect(sweepFilter.frequency);
     sweepLfo.start();
 
-    // Reconnect output through sweep
-    output.connect(sweepFilter);
+    const preOutput = ac.createGain();
+    preOutput.gain.value = 1;
+    preOutput.connect(sweepFilter);
+    sweepFilter.connect(output);
 
-    // HF rolloff (-3dB above 6kHz)
-    const hfRolloff = ac.createBiquadFilter();
-    hfRolloff.type = 'lowshelf';
-    hfRolloff.frequency.value = 6000;
-    hfRolloff.gain.value = -3;
+    function setRoot(rootFreq, fadeTime = 5) {
+      const now = ac.currentTime;
+      currentRoot = rootFreq;
 
-    sweepFilter.connect(hfRolloff);
+      // Fade out old oscillators
+      for (const g of gains) {
+        g.gain.setTargetAtTime(0.00001, now, fadeTime * 0.3);
+      }
+      const oldOscs = oscs.slice();
+      setTimeout(() => {
+        for (const o of oldOscs) {
+          try { o.stop(); } catch (e) { /* noop */ }
+        }
+      }, fadeTime * 1000 + 2000);
+      oscs.length = 0;
+      gains.length = 0;
 
-    return { oscs, gains, output, sweepFilter, sweepLfo, sweepDepth, hfRolloff };
-  }
+      // 3 sines: fundamental, +5th, +octave — each doubled with detuning
+      const intervals = [1, 1.5, 2];
+      const volumes = [0.4, 0.25, 0.2];
+      const detunePairs = [[0, 3], [0, -2], [0, 4]]; // cents
 
-  function playBowlStrike() {
-    if (!audioCtx || !audioActive || !reverb || !filter) return;
+      for (let i = 0; i < intervals.length; i++) {
+        for (const detune of detunePairs[i]) {
+          const osc = ac.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = rootFreq * intervals[i];
+          osc.detune.value = detune;
 
-    droneEnergy = Math.max(droneEnergy, 0.7);
-    audioEnergy = Math.max(audioEnergy, 0.6);
+          if (tapeWowDepth) {
+            tapeWowDepth.connect(osc.detune);
+          }
 
-    const now = audioCtx.currentTime;
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const tibWeight = weights.tibetan;
+          const gain = ac.createGain();
+          gain.gain.setValueAtTime(0.00001, now);
+          gain.gain.setTargetAtTime(volumes[i] * 0.5, now, fadeTime * 0.3);
 
-    // Short noise burst through bank of high-Q bandpass filters
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = crackleNoise;
-
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.00001, now);
-    env.gain.exponentialRampToValueAtTime(0.04 * tibWeight, now + 0.005);
-    env.gain.exponentialRampToValueAtTime(0.00001, now + 0.04);
-
-    noise.connect(env);
-
-    // Harmonic-leaning overtone ratios — warm, singing bowl character
-    // Mix of natural harmonics with gentle inharmonicity for shimmer
-    const bowlRatios = [1, 2, 3, 4, 5.04, 6, 7.07, 8];
-    const bowlBaseFreq = TIBETAN_ROOT * 2 * (1 + Math.random() * 0.5); // 130-196 Hz range
-
-    const bowlOutput = audioCtx.createGain();
-    bowlOutput.gain.value = 1;
-
-    // 6-8 parallel bandpass filters
-    const filterCount = 6 + Math.floor(Math.random() * 3);
-    const filters = [];
-    for (let i = 0; i < filterCount; i++) {
-      const bp = audioCtx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = bowlBaseFreq * bowlRatios[i % bowlRatios.length];
-      bp.Q.value = 30 + Math.random() * 30; // Q=30-60
-
-      const bpGain = audioCtx.createGain();
-      bpGain.gain.value = 0.15 / (i + 1);
-
-      // Bowl resonance envelope (long decay)
-      const resEnv = audioCtx.createGain();
-      resEnv.gain.setValueAtTime(0.8, now);
-      resEnv.gain.exponentialRampToValueAtTime(0.00001, now + 4 + Math.random() * 4);
-
-      env.connect(bp);
-      bp.connect(bpGain).connect(resEnv).connect(bowlOutput);
-      filters.push({ bp, bpGain, resEnv });
+          osc.connect(gain).connect(preOutput);
+          osc.start(now);
+          oscs.push(osc);
+          gains.push(gain);
+        }
+      }
     }
 
-    const pan = audioCtx.createStereoPanner();
-    pan.pan.value = (Math.random() * 2 - 1) * 0.3;
+    function playBowlStrike() {
+      if (!ac || !audioActive || !crackleNoise) return;
 
-    // Heavy reverb for bowl
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.15;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.85;
+      const x = getMacroX();
+      // Bowl strikes only when X < 0.6
+      if (x > 0.6) return;
 
-    bowlOutput.connect(pan);
-    pan.connect(dry).connect(filter);
-    pan.connect(wet).connect(reverb.input);
+      droneEnergy = Math.max(droneEnergy, 0.7);
+      audioEnergy = Math.max(audioEnergy, 0.5);
 
-    const offset = Math.random() * Math.max(0, crackleNoise.duration - 0.1);
-    noise.start(now, offset);
-    noise.stop(now + 0.06);
+      const now = ac.currentTime;
 
-    noise.onended = () => {
-      // Let resonance ring, then clean up after 10s
+      const noise = ac.createBufferSource();
+      noise.buffer = crackleNoise;
+
+      const env = ac.createGain();
+      env.gain.setValueAtTime(0.00001, now);
+      env.gain.exponentialRampToValueAtTime(0.04, now + 0.005);
+      env.gain.exponentialRampToValueAtTime(0.00001, now + 0.04);
+
+      noise.connect(env);
+
+      // Bowl harmonic ratios — slightly inharmonic for shimmer
+      const bowlRatios = [1, 2.71, 5.2];
+      const bowlBaseFreq = currentRoot * 2;
+
+      const bowlOutput = ac.createGain();
+      bowlOutput.gain.value = 1;
+
+      // Each ratio doubled for beating
+      for (let i = 0; i < bowlRatios.length; i++) {
+        for (const detune of [0, 3]) {
+          const bp = ac.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.value = bowlBaseFreq * bowlRatios[i];
+          bp.Q.value = 30 + Math.random() * 30;
+
+          const bpGain = ac.createGain();
+          bpGain.gain.value = 0.12 / (i + 1);
+
+          const resEnv = ac.createGain();
+          // 8-20s decay
+          const decayTime = 8 + Math.random() * 12;
+          resEnv.gain.setValueAtTime(0.8, now);
+          resEnv.gain.exponentialRampToValueAtTime(0.00001, now + decayTime);
+
+          env.connect(bp);
+          bp.connect(bpGain).connect(resEnv).connect(bowlOutput);
+        }
+      }
+
+      bowlOutput.connect(output);
+
+      const offset = Math.random() * Math.max(0, crackleNoise.duration - 0.1);
+      noise.start(now, offset);
+      noise.stop(now + 0.06);
+
+      noise.onended = () => {
+        setTimeout(() => {
+          try { bowlOutput.disconnect(); } catch (e) { /* noop */ }
+        }, 22000);
+      };
+    }
+
+    function scheduleBowl() {
+      if (!audioActive) return;
+      playBowlStrike();
+      // Every 20-50s
+      const next = 20000 + Math.random() * 30000;
+      bowlTimer = setTimeout(scheduleBowl, next);
+    }
+
+    function start() {
+      // Start bowl strikes after delay
+      bowlTimer = setTimeout(scheduleBowl, 5000 + Math.random() * 10000);
+    }
+
+    function stop() {
+      if (bowlTimer) clearTimeout(bowlTimer);
+      bowlTimer = null;
+      const now = ac.currentTime;
+      for (const g of gains) {
+        g.gain.setTargetAtTime(0.00001, now, 2);
+      }
       setTimeout(() => {
+        for (const o of oscs) {
+          try { o.stop(); } catch (e) { /* noop */ }
+        }
         try {
-          bowlOutput.disconnect();
-          pan.disconnect();
-          dry.disconnect();
-          wet.disconnect();
-          env.disconnect();
-          for (const f of filters) {
-            f.bp.disconnect();
-            f.bpGain.disconnect();
-            f.resEnv.disconnect();
-          }
-        } catch (e) { /* noop */ }
-      }, 10000);
-    };
-  }
-
-  function scheduleTibetanBowl() {
-    if (!audioActive) return;
-    if (getDominantQuadrant(getMacroX(), getMacroY()) !== 'tibetan') return;
-
-    playBowlStrike();
-
-    // Bowl strikes every 15-45s
-    const next = 15000 + Math.random() * 30000;
-    tibetanBowlTimer = setTimeout(scheduleTibetanBowl, next);
-  }
-
-  function startTibetanScheduler() {
-    stopTibetanScheduler();
-
-    if (!audioCtx) return;
-
-    tibetanDrones = buildTibetanDrones(audioCtx);
-    // Route through filter → reverb
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.15;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.85;
-    tibetanDrones.hfRolloff.connect(dry).connect(filter);
-    tibetanDrones.hfRolloff.connect(wet).connect(reverb.input);
-    tibetanDrones._dry = dry;
-    tibetanDrones._wet = wet;
-
-    // Fade in over 10-15s
-    const now = audioCtx.currentTime;
-    tibetanDrones.output.gain.setTargetAtTime(0.035, now, 4);
-
-    // Start bowl strikes after initial delay
-    tibetanBowlTimer = setTimeout(scheduleTibetanBowl, 5000 + Math.random() * 10000);
-  }
-
-  function stopTibetanScheduler() {
-    if (tibetanBowlTimer) clearTimeout(tibetanBowlTimer);
-    tibetanBowlTimer = null;
-
-    if (tibetanDrones && audioCtx) {
-      const now = audioCtx.currentTime;
-      tibetanDrones.output.gain.setTargetAtTime(0.00001, now, 3);
-      const drones = tibetanDrones;
-      setTimeout(() => {
-        try {
-          for (const osc of drones.oscs) osc.stop();
-          drones.sweepLfo.stop();
-          drones.output.disconnect();
-          drones.sweepFilter.disconnect();
-          drones.sweepDepth.disconnect();
-          drones.hfRolloff.disconnect();
-          if (drones._dry) drones._dry.disconnect();
-          if (drones._wet) drones._wet.disconnect();
+          sweepLfo.stop();
         } catch (e) { /* noop */ }
       }, 8000);
-      tibetanDrones = null;
     }
+
+    return { output, setRoot, start, stop };
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // ── HAINBACH QUADRANT — Texture & Degradation (Bottom-Right) ──
-  // ═══════════════════════════════════════════════════════════════
+  // ═════════════════════════════════════════════════
+  // ── TEXTURE LAYER — Filtered Noise + Tape Hiss ──
+  // ═════════════════════════════════════════════════
 
-  // F#2 (~92.5 Hz) anchor — pentatonic harmonics for warm tonal moments
-  const HAINBACH_ANCHOR = 92.5;
-  // F# major pentatonic ratios: F# G# A# C# D# — all warm, consonant
-  const HAINBACH_RATIOS = [1, 9/8, 5/4, 3/2, 5/3, 2, 3, 4];
-
-  function buildHainbachTexture(ac) {
-    // Continuous filtered noise through 4 wandering bandpass filters + waveshaper
+  function buildTextureLayer(ac) {
     const output = ac.createGain();
     output.gain.value = 0.00001;
 
-    const noise = ac.createBufferSource();
-    noise.buffer = createNoiseBuffer(ac, 4);
-    noise.loop = true;
+    // Brown noise through 3 wandering bandpass filters
+    const brownNoise = ac.createBufferSource();
+    brownNoise.buffer = createBrownNoiseBuffer(ac, 6);
+    brownNoise.loop = true;
 
     const noiseGain = ac.createGain();
     noiseGain.gain.value = 0.3;
+    brownNoise.connect(noiseGain);
 
-    // 4 wandering bandpass filters
     const bpFilters = [];
     const bpLfos = [];
-    const bpDepths = [];
-    const bpGains = [];
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       const bp = ac.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = HAINBACH_ANCHOR * HAINBACH_RATIOS[Math.floor(Math.random() * HAINBACH_RATIOS.length)] * (0.8 + Math.random() * 0.4);
-      bp.Q.value = 4 + Math.random() * 6;
+      bp.frequency.value = 200 + Math.random() * 800;
+      bp.Q.value = 4 + Math.random() * 4;
 
       const lfo = ac.createOscillator();
       lfo.type = 'sine';
-      lfo.frequency.value = 0.01 + Math.random() * 0.04; // 0.01-0.05 Hz
+      lfo.frequency.value = 0.02;
       const depth = ac.createGain();
-      depth.gain.value = 300 + Math.random() * 500;
+      depth.gain.value = 400;
       lfo.connect(depth).connect(bp.frequency);
       lfo.start();
 
       const bpGain = ac.createGain();
-      bpGain.gain.value = 0.25;
+      bpGain.gain.value = 0.3;
 
       noiseGain.connect(bp);
       bp.connect(bpGain).connect(output);
 
       bpFilters.push(bp);
       bpLfos.push(lfo);
-      bpDepths.push(depth);
-      bpGains.push(bpGain);
     }
 
-    noise.connect(noiseGain);
+    brownNoise.start();
 
-    // Waveshaper for texture
-    const shaper = ac.createWaveShaper();
-    shaper.curve = makeSoftClipCurve(35);
-    shaper.oversample = '2x';
+    // Tape hiss: quiet continuous pink noise, LP 6kHz
+    const pinkNoise = ac.createBufferSource();
+    pinkNoise.buffer = createPinkNoiseBuffer(ac, 4);
+    pinkNoise.loop = true;
 
-    // Lowpass at 4-6kHz
-    const lp = ac.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 5000;
-    lp.Q.value = 0.6;
+    const hissLP = ac.createBiquadFilter();
+    hissLP.type = 'lowpass';
+    hissLP.frequency.value = 6000;
 
-    output.connect(shaper);
-    shaper.connect(lp);
-    noise.start();
+    const hissGain = ac.createGain();
+    hissGain.gain.value = 0.008;
 
-    return { noise, noiseGain, bpFilters, bpLfos, bpDepths, bpGains, output, shaper, lp };
-  }
+    pinkNoise.connect(hissLP).connect(hissGain).connect(output);
+    pinkNoise.start();
 
-  function playResonantPop() {
-    if (!audioCtx || !audioActive || !filter || !reverb) return;
+    function tuneToChord(chord) {
+      // Tune bandpass centers to chord harmonics
+      for (let i = 0; i < bpFilters.length && i < chord.notes.length; i++) {
+        const now = ac.currentTime;
+        bpFilters[i].frequency.setTargetAtTime(chord.notes[i] * (1 + i), now, 3);
+      }
+    }
 
-    textureEnergy = Math.max(textureEnergy, 0.5);
-    audioEnergy = Math.max(audioEnergy, 0.4);
-
-    const now = audioCtx.currentTime;
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const hbWeight = weights.hainbach;
-
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = crackleNoise;
-
-    // High-Q bandpass tuned to harmonic frequencies for musical resonance
-    const popRatio = HAINBACH_RATIOS[Math.floor(Math.random() * HAINBACH_RATIOS.length)];
-    const bp = audioCtx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = HAINBACH_ANCHOR * popRatio * (1 + Math.random() * 0.5);
-    bp.Q.value = 20 + Math.random() * 20; // Q=20-40
-
-    const env = audioCtx.createGain();
-    const peak = (0.015 + Math.random() * 0.02) * hbWeight;
-    env.gain.setValueAtTime(0.00001, now);
-    env.gain.exponentialRampToValueAtTime(peak, now + 0.002);
-    env.gain.exponentialRampToValueAtTime(0.00001, now + 0.04 + Math.random() * 0.06);
-
-    const pan = audioCtx.createStereoPanner();
-    pan.pan.value = (Math.random() * 2 - 1) * 0.6;
-
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.5;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.5;
-
-    noise.connect(bp).connect(env).connect(pan);
-    pan.connect(dry).connect(filter);
-    pan.connect(wet).connect(reverb.input);
-
-    const offset = Math.random() * Math.max(0, crackleNoise.duration - 0.15);
-    noise.start(now, offset);
-    noise.stop(now + 0.15);
-
-    noise.onended = () => {
+    function stop() {
       try {
-        bp.disconnect();
-        env.disconnect();
-        pan.disconnect();
-        dry.disconnect();
-        wet.disconnect();
+        brownNoise.stop();
+        pinkNoise.stop();
+        for (const lfo of bpLfos) lfo.stop();
       } catch (e) { /* noop */ }
-    };
-  }
-
-  function playDegradedTone() {
-    if (!audioCtx || !audioActive || !filter || !reverb) return;
-
-    textureEnergy = Math.max(textureEnergy, 0.4);
-
-    const now = audioCtx.currentTime;
-    const weights = getQuadrantWeights(getMacroX(), getMacroY());
-    const hbWeight = weights.hainbach;
-
-    // Sine through aggressive waveshaper, 50-200ms — tuned to pentatonic
-    const toneRatio = HAINBACH_RATIOS[Math.floor(Math.random() * HAINBACH_RATIOS.length)];
-    const osc = audioCtx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = HAINBACH_ANCHOR * toneRatio;
-
-    const shaper = audioCtx.createWaveShaper();
-    shaper.curve = makeSoftClipCurve(40 + Math.random() * 30);
-    shaper.oversample = '2x';
-
-    const dur = 0.05 + Math.random() * 0.15;
-    const peak = (0.012 + Math.random() * 0.01) * hbWeight;
-
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.00001, now);
-    env.gain.exponentialRampToValueAtTime(peak, now + 0.005);
-    env.gain.exponentialRampToValueAtTime(0.00001, now + dur);
-
-    const lp = audioCtx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 2000 + Math.random() * 2000;
-
-    const pan = audioCtx.createStereoPanner();
-    pan.pan.value = (Math.random() * 2 - 1) * 0.4;
-
-    osc.connect(shaper).connect(env).connect(lp).connect(pan);
-    pan.connect(filter);
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.45;
-    pan.connect(wet).connect(reverb.input);
-
-    osc.start(now);
-    osc.stop(now + dur + 0.05);
-
-    osc.onended = () => {
-      try {
-        shaper.disconnect();
-        env.disconnect();
-        lp.disconnect();
-        pan.disconnect();
-        wet.disconnect();
-      } catch (e) { /* noop */ }
-    };
-  }
-
-  function scheduleHainbachPops() {
-    if (!audioActive) return;
-    if (getDominantQuadrant(getMacroX(), getMacroY()) !== 'hainbach') return;
-
-    // Clusters of pops (80-200ms repeats) with gaps (1.5-4s)
-    const clusterSize = 2 + Math.floor(Math.random() * 5);
-    for (let i = 0; i < clusterSize; i++) {
-      setTimeout(() => {
-        if (!audioActive) return;
-        playResonantPop();
-      }, i * (80 + Math.random() * 120));
     }
 
-    const gap = 1500 + Math.random() * 2500;
-    hainbachPopTimer = setTimeout(scheduleHainbachPops, gap);
+    return { output, tuneToChord, stop };
   }
 
-  function scheduleHainbachTones() {
-    if (!audioActive) return;
-    if (getDominantQuadrant(getMacroX(), getMacroY()) !== 'hainbach') return;
+  // ═══════════════════════════════════
+  // ── CHORD ROTATION ──
+  // ═══════════════════════════════════
 
-    playDegradedTone();
-
-    // Every 10-30s
-    const next = 10000 + Math.random() * 20000;
-    hainbachToneTimer = setTimeout(scheduleHainbachTones, next);
-  }
-
-  function startHainbachScheduler() {
-    stopHainbachScheduler();
-
-    if (!audioCtx) return;
-
-    hainbachTexture = buildHainbachTexture(audioCtx);
-    // Route through filter → reverb with drive
-    const dry = audioCtx.createGain();
-    dry.gain.value = 0.55;
-    const wet = audioCtx.createGain();
-    wet.gain.value = 0.45;
-    hainbachTexture.lp.connect(dry).connect(filter);
-    hainbachTexture.lp.connect(wet).connect(reverb.input);
-    hainbachTexture._dry = dry;
-    hainbachTexture._wet = wet;
-
-    // Fade in
-    const now = audioCtx.currentTime;
-    hainbachTexture.output.gain.setTargetAtTime(0.025, now, 2);
-
-    scheduleHainbachPops();
-    hainbachToneTimer = setTimeout(scheduleHainbachTones, 5000 + Math.random() * 10000);
-  }
-
-  function stopHainbachScheduler() {
-    if (hainbachPopTimer) clearTimeout(hainbachPopTimer);
-    if (hainbachToneTimer) clearTimeout(hainbachToneTimer);
-    hainbachPopTimer = null;
-    hainbachToneTimer = null;
-
-    if (hainbachTexture && audioCtx) {
-      const now = audioCtx.currentTime;
-      hainbachTexture.output.gain.setTargetAtTime(0.00001, now, 2);
-      const tex = hainbachTexture;
-      setTimeout(() => {
-        try {
-          tex.noise.stop();
-          for (const lfo of tex.bpLfos) lfo.stop();
-          tex.output.disconnect();
-          tex.shaper.disconnect();
-          tex.lp.disconnect();
-          if (tex._dry) tex._dry.disconnect();
-          if (tex._wet) tex._wet.disconnect();
-        } catch (e) { /* noop */ }
-      }, 6000);
-      hainbachTexture = null;
-    }
-  }
-
-  // ═════════════════════════════════════════════
-  // ── QUADRANT TRANSITION SYSTEM ──
-  // ═════════════════════════════════════════════
-
-  function startQuadrantScheduler(quadrant) {
-    if (quadrant === 'eno') startEnoScheduler();
-    else if (quadrant === 'glass') startGlassScheduler();
-    else if (quadrant === 'tibetan') startTibetanScheduler();
-    else if (quadrant === 'hainbach') startHainbachScheduler();
-  }
-
-  function stopQuadrantScheduler(quadrant) {
-    if (quadrant === 'eno') stopEnoScheduler();
-    else if (quadrant === 'glass') stopGlassScheduler();
-    else if (quadrant === 'tibetan') stopTibetanScheduler();
-    else if (quadrant === 'hainbach') stopHainbachScheduler();
-  }
-
-  function checkQuadrantTransition() {
+  function rotateChord() {
     if (!audioActive) return;
 
-    const newQuadrant = getDominantQuadrant(getMacroX(), getMacroY());
-    if (newQuadrant === activeQuadrant) return;
+    currentChordIdx = (currentChordIdx + 1) % CHORDS.length;
+    const chord = getCurrentChord();
 
-    const oldQuadrant = activeQuadrant;
-    activeQuadrant = newQuadrant;
+    // Crossfade: 4-6s
+    if (padLayer) padLayer.setChord(chord, 5);
+    if (arpLayer) arpLayer.setNotes(chord);
+    if (droneLayer) droneLayer.setRoot(chord.root, 5);
+    if (textureLayer) textureLayer.tuneToChord(chord);
 
-    // Start new scheduler immediately — old voices complete naturally via envelopes
-    if (transitionTimeout) clearTimeout(transitionTimeout);
-    transitionTimeout = null;
-
-    // Stop old scheduler spawning (existing voices ring out)
-    if (oldQuadrant) {
-      stopQuadrantScheduler(oldQuadrant);
-    }
-
-    // Start new one right away so there's no dead silence
-    startQuadrantScheduler(newQuadrant);
+    // Next rotation: 20-40s
+    const next = 20000 + Math.random() * 20000;
+    chordRotationTimer = setTimeout(rotateChord, next);
   }
 
-  // ── Continuous parameter morphing ──
+  // ═══════════════════════════════════
+  // ── XY PARAMETER MAPPING ──
+  // ═══════════════════════════════════
 
   function applyAmbientSettings(now, ramp = 0.2) {
-    if (!audioCtx || !masterGain || !filter || !delay || !delayFeedback || !reverb) return;
+    if (!audioCtx || !masterGain) return;
 
     const x = getMacroX();
     const y = getMacroY();
-    const weights = getQuadrantWeights(x, y);
-    const dominant = getDominantQuadrant(x, y);
 
-    // Blended parameters based on quadrant weights
-    // Reverb wet: Eno 70%, Glass 38%, Tibetan 80%, Hainbach 48%
-    const reverbWet = clamp(
-      weights.eno * 0.70 + weights.glass * 0.38 + weights.tibetan * 0.80 + weights.hainbach * 0.48,
-      0.1, 0.9
-    );
-
-    // Filter cutoff
-    const cutoff = clamp(
-      weights.eno * 3000 + weights.glass * 6000 + weights.tibetan * 2500 + weights.hainbach * 4000,
-      800, 8000
-    );
-
-    // Delay time
-    const delayTime = clamp(
-      weights.eno * 0.5 + weights.glass * 0.35 + weights.tibetan * 0.3 + weights.hainbach * 0.2,
-      0.1, 0.8
-    );
-
-    // Delay feedback
-    const feedback = clamp(
-      weights.eno * 0.25 + weights.glass * 0.2 + weights.tibetan * 0.3 + weights.hainbach * 0.15,
-      0.05, 0.35
-    );
-
-    // Master level
-    const level = clamp(
-      weights.eno * 0.4 + weights.glass * 0.42 + weights.tibetan * 0.38 + weights.hainbach * 0.36,
-      0.25, 0.5
-    );
-
-    filter.frequency.setTargetAtTime(cutoff, now, ramp);
-    filter.Q.setTargetAtTime(0.4, now, ramp);
-    reverb.wetGain.gain.setTargetAtTime(reverbWet, now, ramp);
-    reverb.dryGain.gain.setTargetAtTime(1 - reverbWet, now, ramp);
-    delay.delayTime.setTargetAtTime(delayTime, now, ramp);
-    delayFeedback.gain.setTargetAtTime(feedback, now, ramp);
-    masterGain.gain.setTargetAtTime(level, now, ramp);
-
-    if (padFilter) {
-      padFilter.frequency.setTargetAtTime(400 + cutoff * 0.5, now, ramp);
+    // ── Layer volumes ──
+    // Pad: Y=0 → 70%, Y=1 → 20%
+    if (padLayer) {
+      const padVol = 0.7 - y * 0.5;
+      padLayer.output.gain.setTargetAtTime(padVol * 0.06, now, ramp);
     }
 
-    if (moodFilter) {
-      const moodCenter = cutoff * 0.6;
-      moodFilter.frequency.setTargetAtTime(moodCenter, now, ramp);
+    // Arpeggio: Y=0 → 0%, Y>0.2 fades in, Y=1 → 80%
+    if (arpLayer) {
+      const arpVol = y > 0.2 ? ((y - 0.2) / 0.8) * 0.8 : 0;
+      arpLayer.output.gain.setTargetAtTime(arpVol * 0.045, now, ramp);
     }
 
-    // Warmth/color based on quadrant
-    const warmth = weights.eno * 0.6 + weights.hainbach * 0.8 + weights.glass * 0.2 + weights.tibetan * 0.4;
+    // Drone: fairly constant 25-35%, slight boost at low Y
+    if (droneLayer) {
+      const droneVol = 0.35 - y * 0.1;
+      droneLayer.output.gain.setTargetAtTime(droneVol * 0.04, now, ramp);
+    }
+
+    // Texture: X=0 → 5%, X=1 → 60%
+    if (textureLayer) {
+      const texVol = 0.05 + x * 0.55;
+      textureLayer.output.gain.setTargetAtTime(texVol * 0.03, now, ramp);
+    }
+
+    // ── Pad filter cutoff: X controls (left=dark 800Hz, right=bright 3000Hz) ──
+    if (padLayer) {
+      const padCutoff = 800 + x * 2200;
+      padLayer.lpFilter.frequency.setTargetAtTime(padCutoff, now, ramp);
+    }
+
+    // ── Global LP (SAW warmth): 6-10kHz ──
+    if (globalLP) {
+      const glpFreq = 6000 + x * 4000;
+      globalLP.frequency.setTargetAtTime(glpFreq, now, ramp);
+    }
+
+    // ── Reverb wet: Y=0(still) → 80%, Y=1(rhythmic) → 50% ──
+    if (reverb) {
+      const reverbWet = 0.8 - y * 0.3;
+      reverb.wetGain.gain.setTargetAtTime(reverbWet, now, ramp);
+      reverb.dryGain.gain.setTargetAtTime(1 - reverbWet, now, ramp);
+    }
+
+    // ── Delay ──
+    if (delay && delayFeedback) {
+      delay.delayTime.setTargetAtTime(0.4 + y * 0.2, now, ramp);
+      delayFeedback.gain.setTargetAtTime(0.15 + (1 - y) * 0.15, now, ramp);
+    }
+
+    // ── Crystal/prism: mainly at Y > 0.5 ──
+    if (crystalSend && crystalMix) {
+      const crystalAmt = y > 0.5 ? (y - 0.5) * 2 : 0;
+      crystalSend.gain.setTargetAtTime(0.01 + crystalAmt * 0.04, now, ramp);
+      crystalMix.gain.setTargetAtTime(0.02 + crystalAmt * 0.15, now, ramp);
+    }
+
+    if (prismSend && prismMix) {
+      const prismAmt = y > 0.5 ? (y - 0.5) * 2 : 0;
+      prismSend.gain.setTargetAtTime(0.005 + prismAmt * 0.02, now, ramp);
+      prismMix.gain.setTargetAtTime(0.01 + prismAmt * 0.12, now, ramp);
+    }
+
+    // ── Warmth/color ──
     if (warmthShelf && warmthLowpass) {
-      warmthShelf.gain.setTargetAtTime(warmth * 6, now, ramp);
+      const warmth = 0.3 + x * 0.5;
+      warmthShelf.gain.setTargetAtTime(warmth * 4, now, ramp);
       warmthLowpass.frequency.setTargetAtTime(14000 - warmth * 6000, now, ramp);
     }
 
+    // ── Drive: more at right (X=1) ──
     if (analogDriveIn && analogPost) {
-      const drive = weights.hainbach * 0.4 + weights.eno * 0.05 + weights.glass * 0.02 + weights.tibetan * 0.01;
+      const drive = x * 0.3;
       analogDriveIn.gain.setTargetAtTime(1 + drive, now, ramp);
       analogPost.gain.setTargetAtTime(0.95 - drive * 0.1, now, ramp);
     }
 
+    // ── Tape bed ──
     if (tapeBed) {
-      // Hainbach: 3-5x normal tape bed, Eno: moderate, others: minimal
-      const tapeAmt = clamp(
-        weights.hainbach * 0.003 + weights.eno * 0.0006 + weights.glass * 0.0001 + weights.tibetan * 0.0002,
-        0.00008, 0.004
-      );
+      const tapeAmt = 0.0002 + x * 0.003;
       tapeBed.output.gain.setTargetAtTime(tapeAmt, now, ramp);
     }
 
-    // Reverb character per quadrant
-    if (reverb.preDelay && reverb.wetTone && reverb.shimmerShelf) {
-      reverb.preDelay.delayTime.setTargetAtTime(
-        weights.eno * 0.04 + weights.glass * 0.02 + weights.tibetan * 0.05 + weights.hainbach * 0.015,
-        now, ramp
-      );
-      reverb.wetTone.frequency.setTargetAtTime(
-        weights.eno * 5000 + weights.glass * 7000 + weights.tibetan * 4500 + weights.hainbach * 3500,
-        now, ramp
-      );
-      if (reverb.wetHighpass) {
-        reverb.wetHighpass.frequency.setTargetAtTime(
-          weights.eno * 180 + weights.glass * 250 + weights.tibetan * 160 + weights.hainbach * 300,
-          now, ramp
-        );
-      }
-      reverb.shimmerShelf.gain.setTargetAtTime(
-        weights.eno * 0.3 + weights.glass * 1.5 + weights.tibetan * 0.2 + weights.hainbach * -0.5,
-        now, ramp
-      );
-    }
-
-    if (reverb.bloomDelay && reverb.bloomFeedback && reverb.bloomMix) {
-      reverb.bloomDelay.delayTime.setTargetAtTime(
-        weights.eno * 0.8 + weights.glass * 0.45 + weights.tibetan * 1.6 + weights.hainbach * 0.3,
-        now, ramp
-      );
-      reverb.bloomFeedback.gain.setTargetAtTime(
-        clamp(weights.eno * 0.25 + weights.glass * 0.15 + weights.tibetan * 0.30 + weights.hainbach * 0.1, 0.07, 0.35),
-        now, ramp
-      );
-      reverb.bloomMix.gain.setTargetAtTime(
-        clamp(weights.eno * 0.12 + weights.glass * 0.05 + weights.tibetan * 0.15 + weights.hainbach * 0.04, 0.02, 0.2),
-        now, ramp
-      );
-    }
-
-    if (crystalSend && crystalDelay && crystalFeedback && crystalHP && crystalLP && crystalMix) {
-      // Crystal: minimal for Eno/Tibetan, more for Glass/Hainbach
-      const crystalAmt = weights.eno * 0.1 + weights.glass * 0.6 + weights.tibetan * 0.15 + weights.hainbach * 0.4;
-      crystalSend.gain.setTargetAtTime(0.01 + crystalAmt * 0.04, now, ramp);
-      crystalMix.gain.setTargetAtTime(clamp(crystalAmt * 0.15, 0.02, 0.25), now, ramp);
-    }
-
-    if (prismSend && prismMix) {
-      const prismAmt = weights.eno * 0.05 + weights.glass * 0.4 + weights.tibetan * 0.1 + weights.hainbach * 0.3;
-      prismSend.gain.setTargetAtTime(0.005 + prismAmt * 0.02, now, ramp);
-      prismMix.gain.setTargetAtTime(clamp(prismAmt * 0.1, 0.01, 0.2), now, ramp);
-    }
-
-    // Crackle: heavy for Hainbach, moderate for Eno, minimal for others
+    // ── Crackle ──
     if (crackleNode) {
-      const crackleAmt = weights.hainbach * 0.8 + weights.eno * 0.3 + weights.glass * 0.05 + weights.tibetan * 0.03;
+      const crackleAmt = 0.1 + x * 0.8;
       crackleNode.output.gain.setTargetAtTime(
-        clamp(0.05 + crackleAmt * 0.6, 0.02, 0.7),
+        clamp(0.05 + crackleAmt * 0.5, 0.02, 0.6),
         now, ramp
       );
       crackleNode.dustGain.gain.setTargetAtTime(
-        clamp(0.0002 + crackleAmt * 0.01, 0.0001, 0.012),
+        clamp(0.0002 + crackleAmt * 0.008, 0.0001, 0.01),
         now, ramp
       );
     }
 
-    // Check for quadrant transition
-    checkQuadrantTransition();
+    // ── Reverb character ──
+    if (reverb.preDelay && reverb.wetTone && reverb.shimmerShelf) {
+      reverb.preDelay.delayTime.setTargetAtTime(0.02 + (1 - y) * 0.03, now, ramp);
+      reverb.wetTone.frequency.setTargetAtTime(4500 + y * 2500, now, ramp);
+      if (reverb.wetHighpass) {
+        reverb.wetHighpass.frequency.setTargetAtTime(180 + y * 80, now, ramp);
+      }
+      reverb.shimmerShelf.gain.setTargetAtTime(-0.2 + y * 1.5, now, ramp);
+    }
+
+    // ── Bloom ──
+    if (reverb.bloomDelay && reverb.bloomFeedback && reverb.bloomMix) {
+      reverb.bloomDelay.delayTime.setTargetAtTime(0.5 + (1 - y) * 1.3, now, ramp);
+      reverb.bloomFeedback.gain.setTargetAtTime(
+        clamp(0.15 + (1 - y) * 0.15, 0.15, 0.30),
+        now, ramp
+      );
+      reverb.bloomMix.gain.setTargetAtTime(
+        clamp(0.04 + (1 - y) * 0.1, 0.04, 0.15),
+        now, ramp
+      );
+    }
+
+    // ── Master level ──
+    masterGain.gain.setTargetAtTime(0.4, now, ramp);
   }
 
-  function syncKnobToAudio(id) {
+  function syncKnobToAudio() {
     if (!audioCtx || !audioActive) return;
     const now = audioCtx.currentTime;
     applyAmbientSettings(now, 0.2);
@@ -2174,10 +1728,20 @@
     limiter.attack.value = 0.004;
     limiter.release.value = 0.35;
 
-    limiter.connect(masterGain);
+    // Global LP filter for SAW warmth
+    globalLP = audioCtx.createBiquadFilter();
+    globalLP.type = 'lowpass';
+    globalLP.frequency.value = 8000;
+    globalLP.Q.value = 0.5;
+
+    limiter.connect(globalLP);
+    globalLP.connect(masterGain);
     masterGain.connect(audioCtx.destination);
 
+    // Reverb
     reverb = buildReverb(audioCtx);
+
+    // Warmth chain
     warmthShelf = audioCtx.createBiquadFilter();
     warmthShelf.type = 'lowshelf';
     warmthShelf.frequency.value = 220;
@@ -2199,15 +1763,18 @@
     reverb.output.connect(warmthShelf);
     warmthShelf.connect(warmthLowpass);
     warmthLowpass.connect(analogDriveIn);
-    analogDriveIn.connect(analogPost);
+    analogDriveIn.connect(analogDrive);
+    analogDrive.connect(analogPost);
     analogPost.connect(limiter);
 
+    // Delay
     delay = audioCtx.createDelay(2.0);
     delayFeedback = audioCtx.createGain();
     delay.connect(delayFeedback);
     delayFeedback.connect(delay);
     delay.connect(reverb.input);
 
+    // Crystal delay
     crystalSend = audioCtx.createGain();
     crystalSend.gain.value = 0.00001;
     crystalDelay = audioCtx.createDelay(2.8);
@@ -2229,6 +1796,7 @@
     crystalLP.connect(crystalFeedback).connect(crystalDelay);
     crystalLP.connect(crystalMix).connect(reverb.input);
 
+    // Prism delay
     prismSend = audioCtx.createGain();
     prismSend.gain.value = 0.00001;
     prismDelayA = audioCtx.createDelay(2.2);
@@ -2269,43 +1837,63 @@
     prismLP.connect(prismFeedback).connect(prismDelayA);
     prismLP.connect(prismMix).connect(reverb.input);
 
-    moodFilter = audioCtx.createBiquadFilter();
-    moodFilter.type = 'peaking';
-    moodFilter.frequency.value = 1200;
-    moodFilter.Q.value = 1;
-    moodFilter.gain.value = 0;
-    moodFilter.connect(reverb.input);
-    moodFilter.connect(delay);
+    // Tape wow/flutter: global pitch LFO 0.3Hz, 3-5 cents
+    tapeWowLfo = audioCtx.createOscillator();
+    tapeWowLfo.type = 'sine';
+    tapeWowLfo.frequency.value = 0.3;
+    tapeWowDepth = audioCtx.createGain();
+    tapeWowDepth.gain.value = 4; // ~4 cents
+    tapeWowLfo.connect(tapeWowDepth);
+    tapeWowLfo.start();
 
-    filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 900;
-    filter.Q.value = 0.8;
-    filter.connect(moodFilter);
+    // Noise buffers
+    crackleNoise = createNoiseBuffer(audioCtx, 2.2);
+    crackleDustNoise = createBrownNoiseBuffer(audioCtx, 5);
 
-    padFilter = audioCtx.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.value = 1800;
-    padFilter.Q.value = 0.5;
-    padFilter.connect(moodFilter);
-
+    // Tape bed
     tapeBed = buildTapeBed(audioCtx);
     tapeBed.output.connect(analogDriveIn);
 
-    crackleNoise = createNoiseBuffer(audioCtx, 2.2);
-    crackleDustNoise = createDustBuffer(audioCtx, 5);
+    // Crackle
     crackleNode = buildCrackle(audioCtx, crackleDustNoise);
     crackleNode.output.connect(analogDriveIn);
 
+    // ── Build 4 layers ──
+    const chord = getCurrentChord();
+
+    // Pad layer
+    padLayer = buildPadLayer(audioCtx);
+    padLayer.output.connect(reverb.input);
+    padLayer.output.connect(delay);
+    padLayer.setChord(chord, 3);
+
+    // Arpeggio layer
+    arpLayer = buildArpLayer(audioCtx);
+    arpLayer.output.connect(reverb.input);
+    arpLayer.setNotes(chord);
+    arpLayer.start();
+
+    // Drone layer
+    droneLayer = buildDroneLayer(audioCtx);
+    droneLayer.output.connect(reverb.input);
+    droneLayer.setRoot(chord.root, 3);
+    droneLayer.start();
+
+    // Texture layer
+    textureLayer = buildTextureLayer(audioCtx);
+    textureLayer.output.connect(reverb.input);
+    textureLayer.tuneToChord(chord);
+
+    // ── Activate ──
     audioActive = true;
     applyAmbientSettings(audioCtx.currentTime, 0.05);
 
+    // Start crackle
     if (crackleTimer) clearTimeout(crackleTimer);
     scheduleCrackle();
 
-    // Start the dominant quadrant's scheduler
-    activeQuadrant = getDominantQuadrant(getMacroX(), getMacroY());
-    startQuadrantScheduler(activeQuadrant);
+    // Start chord rotation (first after 20-40s)
+    chordRotationTimer = setTimeout(rotateChord, 20000 + Math.random() * 20000);
   }
 
   function updateAudioParams() {
@@ -2314,21 +1902,12 @@
     applyAmbientSettings(now, 0.12);
   }
 
-  function stopAllQuadrants() {
-    stopEnoScheduler();
-    stopGlassScheduler();
-    stopTibetanScheduler();
-    stopHainbachScheduler();
-    if (transitionTimeout) clearTimeout(transitionTimeout);
-    transitionTimeout = null;
-    activeQuadrant = null;
-  }
-
   function stopAudio() {
     audioActive = false;
     audioEnergy = 0;
     droneEnergy = 0;
-    motifEnergy = 0;
+    padEnergy = 0;
+    arpEnergy = 0;
     textureEnergy = 0;
 
     if (crackleTimer) {
@@ -2336,28 +1915,15 @@
       crackleTimer = null;
     }
 
-    stopAllQuadrants();
-
-    // Fade out remaining voices
-    for (const voice of enoVoices) {
-      try {
-        voice.env.gain.cancelScheduledValues(audioCtx.currentTime);
-        voice.env.gain.setValueAtTime(voice.env.gain.value, audioCtx.currentTime);
-        voice.env.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 2);
-        for (const node of voice.nodes) node.stop(audioCtx.currentTime + 2.1);
-      } catch (e) { /* noop */ }
+    if (chordRotationTimer) {
+      clearTimeout(chordRotationTimer);
+      chordRotationTimer = null;
     }
-    enoVoices = [];
 
-    for (const voice of glassVoices) {
-      try {
-        voice.env.gain.cancelScheduledValues(audioCtx.currentTime);
-        voice.env.gain.setValueAtTime(voice.env.gain.value, audioCtx.currentTime);
-        voice.env.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
-        for (const node of voice.nodes) node.stop(audioCtx.currentTime + 0.35);
-      } catch (e) { /* noop */ }
-    }
-    glassVoices = [];
+    if (padLayer) { padLayer.stop(); padLayer = null; }
+    if (arpLayer) { arpLayer.stop(); arpLayer = null; }
+    if (droneLayer) { droneLayer.stop(); droneLayer = null; }
+    if (textureLayer) { textureLayer.stop(); textureLayer = null; }
 
     if (masterGain && audioCtx) {
       const now = audioCtx.currentTime;
@@ -2397,11 +1963,37 @@
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume();
           audioActive = true;
+
+          // Rebuild layers if they were stopped
+          const chord = getCurrentChord();
+          if (!padLayer) {
+            padLayer = buildPadLayer(audioCtx);
+            padLayer.output.connect(reverb.input);
+            padLayer.output.connect(delay);
+            padLayer.setChord(chord, 3);
+          }
+          if (!arpLayer) {
+            arpLayer = buildArpLayer(audioCtx);
+            arpLayer.output.connect(reverb.input);
+            arpLayer.setNotes(chord);
+            arpLayer.start();
+          }
+          if (!droneLayer) {
+            droneLayer = buildDroneLayer(audioCtx);
+            droneLayer.output.connect(reverb.input);
+            droneLayer.setRoot(chord.root, 3);
+            droneLayer.start();
+          }
+          if (!textureLayer) {
+            textureLayer = buildTextureLayer(audioCtx);
+            textureLayer.output.connect(reverb.input);
+            textureLayer.tuneToChord(chord);
+          }
+
           applyAmbientSettings(audioCtx.currentTime, 0.4);
           if (crackleTimer) clearTimeout(crackleTimer);
           scheduleCrackle();
-          activeQuadrant = getDominantQuadrant(getMacroX(), getMacroY());
-          startQuadrantScheduler(activeQuadrant);
+          chordRotationTimer = setTimeout(rotateChord, 20000 + Math.random() * 20000);
         } else {
           initAudio();
         }
@@ -2432,7 +2024,6 @@
     draw(t);
     drawParticles();
     drawPadAura();
-    updateDotReactivity();
     updateAudioParams();
     requestAnimationFrame(loop);
   }
