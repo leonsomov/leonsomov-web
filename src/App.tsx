@@ -1,132 +1,178 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
-import { Hero } from './components/Hero'
+import { useState } from 'react'
 import { FogCanvas } from './components/FogCanvas'
-import { PhotoGhost } from './components/PhotoGhost'
-import { OverlayMenu } from './components/OverlayMenu'
-import { SynthControls } from './components/SynthControls'
-import { useCompositionStore } from './composition/useCompositionStore'
+import { Monogram } from './components/Monogram'
+import styles from './components/App.module.css'
 
-function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
+const projects = [
+  { name: 'Leon Somov & Jazzu', desc: '7 albums, two MTV EMA Best Baltic Act awards, M.A.M.A. Band of the Year' },
+  { name: 'Highly Sedated', desc: 'Steve Angello\'s SIZE Records, BBC Radio 1, live with Lithuanian Chamber Orchestra' },
+  { name: 'Cabin Sessions', desc: 'audiovisual live project, Ziro Festival India, experimental electronics' },
+  { name: 'Cello Duo', desc: 'experimental electronics meets cello, vinyl-only release' },
+  { name: '"Ruta"', desc: 'original film score' },
+  { name: 'M-1 Radio', desc: 'jingles and sound identity for Lithuania\'s biggest commercial radio station' },
+  { name: 'Geeky Punks', desc: 'sound synthesis education, courses and mentoring' },
+]
+
+const links = [
+  { label: 'Spotify', url: 'https://open.spotify.com/artist/6JfKHChZiaq0DLe0JRCgRx' },
+  { label: 'YouTube', url: 'https://www.youtube.com/@LEONSOMOV' },
+  { label: 'Instagram', url: 'https://www.instagram.com/leonsomov/' },
+]
 
 export function App() {
-  const playing = useCompositionStore((s) => s.playing)
-  const setXY = useCompositionStore((s) => s.setXY)
-  const dotRef = useRef<HTMLDivElement>(null)
-  const pointerActiveRef = useRef(false)
-  const [dotVisible, setDotVisible] = useState(false)
-
-  const applyXY = useCallback((clientX: number, clientY: number) => {
-    const x = clamp(clientX / window.innerWidth, 0, 1)
-    const y = clamp(1 - clientY / window.innerHeight, 0, 1)
-    setXY(x, y)
-  }, [setXY])
-
-  // Fullscreen pointer events for XY control
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (!useCompositionStore.getState().playing) return
-    pointerActiveRef.current = true
-    setDotVisible(true)
-    applyXY(e.clientX, e.clientY)
-  }, [applyXY])
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!useCompositionStore.getState().playing) return
-    if (!pointerActiveRef.current) return
-    applyXY(e.clientX, e.clientY)
-  }, [applyXY])
-
-  const onPointerUp = useCallback(() => {
-    pointerActiveRef.current = false
-    // On touch devices, hide dot on release. On mouse, keep visible.
-    if ('ontouchstart' in window) {
-      setDotVisible(false)
-    }
-  }, [])
-
-  // Show dot on mouse move even without click (desktop)
-  useEffect(() => {
-    if (!playing) return
-    if ('ontouchstart' in window) return // touch-only: dot shows on touch
-    const onMove = () => setDotVisible(true)
-    window.addEventListener('mousemove', onMove, { once: true })
-    return () => window.removeEventListener('mousemove', onMove)
-  }, [playing])
-
-  // Desktop: track mouse even without click for continuous XY
-  useEffect(() => {
-    if (!playing) return
-    if ('ontouchstart' in window) return
-    const onMove = (e: MouseEvent) => {
-      applyXY(e.clientX, e.clientY)
-    }
-    window.addEventListener('mousemove', onMove)
-    return () => window.removeEventListener('mousemove', onMove)
-  }, [playing, applyXY])
-
-  // Update floating dot position
-  useEffect(() => {
-    if (!playing) return
-    const unsub = useCompositionStore.subscribe((state) => {
-      if (dotRef.current) {
-        dotRef.current.style.left = `${state.xy.x * 100}%`
-        dotRef.current.style.top = `${(1 - state.xy.y) * 100}%`
-      }
-    })
-    return unsub
-  }, [playing])
-
-  // Keyboard XY control
-  useEffect(() => {
-    if (!playing) return
-    const onKey = (e: KeyboardEvent) => {
-      const s = e.shiftKey ? 0.07 : 0.03
-      let { x, y } = useCompositionStore.getState().xy
-      if (e.key === 'ArrowLeft') x = clamp(x - s, 0, 1)
-      else if (e.key === 'ArrowRight') x = clamp(x + s, 0, 1)
-      else if (e.key === 'ArrowDown') y = clamp(y - s, 0, 1)
-      else if (e.key === 'ArrowUp') y = clamp(y + s, 0, 1)
-      else return
-      setXY(x, y)
-      e.preventDefault()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [playing, setXY])
+  const [bioExpanded, setBioExpanded] = useState(false)
 
   return (
     <>
       <FogCanvas />
-      {playing && <PhotoGhost />}
-      <main
-        style={{ touchAction: playing ? 'none' : undefined, cursor: playing ? 'crosshair' : undefined }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        <Hero />
-        {playing && (
-          <div
-            ref={dotRef}
-            style={{
-              position: 'fixed',
-              width: 14,
-              height: 14,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(232,228,222,0.9) 0%, rgba(232,228,222,0.45) 30%, rgba(232,228,222,0.1) 60%, transparent 100%)',
-              boxShadow: '0 0 16px 6px rgba(232,228,222,0.18)',
-              transform: 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              zIndex: 10,
-              opacity: dotVisible ? 1 : 0,
-              transition: 'opacity 0.3s',
-            }}
-            aria-hidden="true"
+      <main>
+        {/* Hero */}
+        <section className={styles.hero}>
+          <h1 className={styles.monogramHeading} aria-label="Leon Somov">
+            <span className="sr-only">Leon Somov</span>
+            <Monogram className={styles.monogramSvg} />
+          </h1>
+          <p className={styles.heroTagline}>composer / producer / sound artist</p>
+        </section>
+
+        {/* Atmospheric silhouette — full bleed */}
+        <div className={styles.atmosphereWrap}>
+          <img
+            src="/photos/long-exposure-1.webp"
+            alt=""
+            className={styles.atmosphereImg}
           />
-        )}
+        </div>
+
+        {/* Bio — short intro always visible, full bio expandable */}
+        <section className={styles.bioSection}>
+          <div className={styles.contentWrap}>
+            <div className={styles.bioIntro}>
+              <p className={styles.bioLead}>
+                Two decades of shaping electronic music — from concert halls
+                and club systems to film scores, theatre stages, and interactive
+                installations across the world.
+              </p>
+              <p className={styles.bioSummary}>
+                Award-winning composer and producer. Modular synth enthusiast.
+                MTV Europe Music Awards recipient. BBC Radio 1 featured artist.
+                Sound synthesis educator.
+              </p>
+            </div>
+
+            <div
+              className={styles.bioFull}
+              style={{
+                maxHeight: bioExpanded ? '2000px' : '0',
+                opacity: bioExpanded ? 1 : 0,
+              }}
+            >
+              <p className={styles.bioBody}>
+                Leon Somov is a composer, producer, and modular synth enthusiast
+                whose career spans over twenty years of genre-defying work. With
+                Jazzu he built one of the Baltic region's most celebrated electronic
+                acts — seven albums, two MTV Europe Music Awards for Best Baltic Act,
+                multiple M.A.M.A. awards including Band of the Year and Producer of
+                the Year, and a live show that redefined what electronic music could
+                be on stage.
+              </p>
+              <p className={styles.bioBody}>
+                His production work reached Steve Angello's SIZE Records through the
+                Highly Sedated project, with their debut single broadcasted on BBC
+                Radio 1. The project later recorded a live orchestral album with the
+                Lithuanian Chamber Orchestra at the Palace of the Grand Dukes of
+                Lithuania — a collision of electronic music and classical tradition.
+              </p>
+              <p className={styles.bioBody}>
+                Beyond the studio, Leon creates interactive audiovisual exhibitions
+                and immersive sound installations, with works shown in Brussels and
+                Vilnius. He composes for film — including the original score for
+                "Ruta" — and has written music for productions by the legendary
+                theatre director Eimuntas Nekrosius. His jingles have aired on M-1,
+                Lithuania's biggest commercial radio station, and he crafts sound
+                identities for companies and brands.
+              </p>
+              <p className={styles.bioBody}>
+                In 2024, he set a Lithuanian national record by performing live on a
+                synthesizer from a plane flying at 300 meters over the Curonian
+                Lagoon, streamed in real time via 5G. Recent performances have taken
+                him to Los Angeles, Portland, and India's Ziro Festival of Music,
+                with many more to come.
+              </p>
+              <p className={styles.bioBody}>
+                His latest project, Cello Duo, pairs experimental electronics with
+                cello for a vinyl-only release. As a member of Geeky Punks, he
+                teaches sound synthesis — bringing the same depth to education that
+                he brings to every recording, and working to make the world of
+                modular synths accessible to everyone.
+              </p>
+            </div>
+
+            <button
+              className={styles.bioToggle}
+              onClick={() => setBioExpanded(!bioExpanded)}
+              aria-expanded={bioExpanded}
+            >
+              {bioExpanded ? 'less' : 'read more'}
+            </button>
+          </div>
+        </section>
+
+        {/* Performance — hands on modular */}
+        <div className={styles.photoFull}>
+          <img
+            src="/photos/performance-1.webp"
+            alt=""
+            className={styles.photoFullImg}
+            loading="lazy"
+          />
+        </div>
+
+        {/* Projects */}
+        <section className={styles.projectsSection}>
+          <div className={styles.contentWrap}>
+            <h2 className={styles.sectionLabel}>selected work</h2>
+            <div className={styles.projectList}>
+              {projects.map((p) => (
+                <div key={p.name} className={styles.projectRow}>
+                  <span className={styles.projectName}>{p.name}</span>
+                  <span className={styles.projectDesc}>{p.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Gear close-up */}
+        <div className={styles.dividerStrip}>
+          <img
+            src="/photos/gear-detail.webp"
+            alt=""
+            className={styles.dividerImg}
+            loading="lazy"
+          />
+        </div>
+
+        {/* Footer */}
+        <footer className={styles.footer}>
+          <div className={styles.contentWrap}>
+            <nav className={styles.linkRow}>
+              {links.map((l) => (
+                <a
+                  key={l.label}
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.link}
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+            <p className={styles.credit}>Photos by Ieva Jura</p>
+          </div>
+        </footer>
       </main>
-      {playing && <OverlayMenu />}
-      <SynthControls />
     </>
   )
 }
