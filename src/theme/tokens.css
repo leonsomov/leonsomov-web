@@ -1,0 +1,10 @@
+:root {
+  --bg: #0a0a0a;
+  --fg: #e8e4de;
+  --fg-dim: #8a857e;
+  --fg-muted: #5a5550;
+  --accent: #c4a35a;
+  --font: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  --content-width: 680px;
+  --section-gap: 6rem;
+}
