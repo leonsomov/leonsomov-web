@@ -3,64 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>L-S</title>
-    <meta name="description" content="L-S — electronic music, modular synths, code." />
-    <meta property="og:title" content="L-S" />
+    <title>Leon Somov</title>
+    <meta name="description" content="Leon Somov — electronic music, modular synths, code." />
+    <meta property="og:title" content="Leon Somov" />
     <meta property="og:description" content="Electronic music, modular synths, code." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://leonsomov.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap"
       rel="stylesheet"
     />
     <link
       rel="icon"
       type="image/svg+xml"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0b0f'/%3E%3Cpath d='M8 8L14 8 14 48 30 48 30 54 8 54Z' fill='%23e8e4de'/%3E%3Cpath d='M53 11L43 11Q37 11 37 17L37 25Q37 31 43 31L47 31Q53 31 53 37L53 45Q53 51 47 51L37 51' fill='none' stroke='%23e8e4de' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0a0a'/%3E%3Cpath d='M8 8L14 8 14 48 30 48 30 54 8 54Z' fill='%23e8e4de'/%3E%3Cpath d='M53 11L43 11Q37 11 37 17L37 25Q37 31 43 31L47 31Q53 31 53 37L53 45Q53 51 47 51L37 51' fill='none' stroke='%23e8e4de' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <canvas class="bg-canvas" aria-hidden="true"></canvas>
-
-    <main class="stage" aria-label="Landing page">
-      <div class="monogram-wrap">
-        <h1 class="monogram" aria-label="L-S monogram">
-          <span class="sr-only">L-S</span>
-          <svg
-            class="monogram-svg"
-            viewBox="0 0 200 80"
-            aria-hidden="true"
-            focusable="false"
-          >
-            <!-- L -->
-            <path
-              d="M0 0 L12 0 L12 68 L50 68 L50 80 L0 80 Z"
-              fill="currentColor"
-            />
-            <!-- Dash -->
-            <path
-              d="M72 34 L108 34 L108 46 L72 46 Z"
-              fill="currentColor"
-            />
-            <!-- S -->
-            <path
-              d="M200 0 L147 0 C137.61 0 130 7.61 130 17 L130 29 C130 38.39 137.61 46 147 46 L183 46 C192.39 46 200 53.61 200 63 C200 72.39 192.39 80 183 80 L130 80 L130 68 L183 68 C185.76 68 188 65.76 188 63 C188 60.24 185.76 58 183 58 L183 34 L147 34 C144.24 34 142 31.76 142 29 L142 17 C142 14.24 144.24 12 147 12 L200 12 Z"
-              fill="currentColor"
-            />
-          </svg>
-        </h1>
-      </div>
-      <button class="breathe-btn" aria-label="Start ambient audio">breathe</button>
-      <div class="synth-panel" aria-label="Ambient synth — drag to morph layers"></div>
-    </main>
-
-    <nav class="links" aria-label="Links">
-      <a class="link-text" href="https://www.instagram.com/leonsomov" target="_blank" rel="noreferrer">contact</a>
-    </nav>
-
-    <script src="script.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
