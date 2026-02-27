@@ -1,0 +1,313 @@
+/* ── Hero ── */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.monogramHeading {
+  margin: 0;
+  line-height: 0;
+  color: var(--fg);
+  animation: pulseGlow 24s ease-in-out infinite;
+}
+
+.monogramSvg {
+  width: clamp(5rem, 15vw, 10rem);
+  height: auto;
+  display: block;
+}
+
+.heroTagline {
+  margin: 1.5rem 0 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  color: var(--fg-muted);
+  font-weight: 300;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.78;
+    filter: drop-shadow(0 0 6px rgba(255, 240, 220, 0.18))
+            drop-shadow(0 0 16px rgba(255, 240, 220, 0.04));
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 14px rgba(255, 240, 220, 0.45))
+            drop-shadow(0 0 32px rgba(255, 240, 220, 0.12));
+  }
+}
+
+/* ── Atmospheric full-bleed photo ── */
+.atmosphereWrap {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-height: 70vh;
+  overflow: hidden;
+  margin-top: -8rem;
+}
+
+.atmosphereImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: grayscale(1);
+  opacity: 0.5;
+  object-fit: cover;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 75%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 12%,
+    black 75%,
+    transparent 100%
+  );
+}
+
+/* ── Bio Section ── */
+.bioSection {
+  position: relative;
+  z-index: 2;
+  padding: var(--section-gap) 0;
+}
+
+.contentWrap {
+  width: min(var(--content-width), calc(100% - 2.5rem));
+  margin: 0 auto;
+}
+
+.bioIntro {
+  margin-bottom: 0;
+}
+
+.bioLead {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--fg);
+  margin: 0 0 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.bioSummary {
+  font-size: 0.78rem;
+  line-height: 1.75;
+  color: var(--fg-dim);
+  margin: 0;
+}
+
+.bioFull {
+  overflow: hidden;
+  transition: max-height 0.6s ease, opacity 0.5s ease;
+}
+
+.bioFull p:first-child {
+  margin-top: 1.5rem;
+}
+
+.bioBody {
+  font-size: 0.78rem;
+  line-height: 1.75;
+  color: var(--fg-dim);
+  margin: 0 0 1.25rem;
+}
+
+.bioBody:last-child {
+  margin-bottom: 0;
+}
+
+.bioToggle {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  cursor: pointer;
+  transition: opacity 0.2s;
+  text-transform: lowercase;
+}
+
+.bioToggle:hover {
+  opacity: 0.65;
+}
+
+/* ── Full-bleed performance photo ── */
+.photoFull {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.photoFullImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: grayscale(1) contrast(1.05);
+  opacity: 0.45;
+  object-fit: cover;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 8%,
+    black 85%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 8%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+/* ── Photo Divider Strips ── */
+.dividerStrip {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  overflow: hidden;
+  max-height: 260px;
+}
+
+.dividerImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: grayscale(1);
+  opacity: 0.35;
+  object-fit: cover;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+/* ── Projects ── */
+.projectsSection {
+  position: relative;
+  z-index: 2;
+  padding: var(--section-gap) 0;
+}
+
+.sectionLabel {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: lowercase;
+  color: var(--fg-muted);
+  margin: 0 0 2rem;
+  font-weight: 400;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+}
+
+.projectRow {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  color: var(--fg);
+  border-bottom: 1px solid rgba(232, 228, 222, 0.04);
+}
+
+.projectRow:last-child {
+  border-bottom: none;
+}
+
+.projectName {
+  font-size: 0.82rem;
+  color: var(--accent);
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+}
+
+.projectDesc {
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+}
+
+/* ── Footer ── */
+.footer {
+  position: relative;
+  z-index: 2;
+  padding: 4rem 0 3rem;
+}
+
+.linkRow {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.link {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.link:hover {
+  color: var(--fg-dim);
+}
+
+.credit {
+  margin-top: 2rem;
+  font-size: 0.6rem;
+  color: var(--fg-muted);
+  opacity: 0.4;
+  letter-spacing: 0.06em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+  .monogramSvg {
+    width: clamp(4rem, 22vw, 7rem);
+  }
+
+  .atmosphereWrap {
+    margin-top: -4rem;
+    max-height: 50vh;
+  }
+
+  .projectRow {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .linkRow {
+    gap: 1.25rem;
+  }
+}
