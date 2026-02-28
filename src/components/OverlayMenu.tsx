@@ -2,14 +2,14 @@ import { useState, useCallback, useEffect } from 'react'
 import styles from './OverlayMenu.module.css'
 
 const projects = [
-  { name: 'Leon Somov & Jazzu', desc: '7 albums', url: 'https://open.spotify.com/artist/6JfKHChZiaq0DLe0JRCgRx' },
-  { name: 'Highly Sedated', desc: 'SIZE Records', url: 'https://open.spotify.com/artist/5g5T3KaBbJWdbBfHtXTPwA' },
+  { name: 'Leon Somov & Jazzu', desc: '7 albums', url: 'https://open.spotify.com/artist/6CTezLRkBux4t2uCws1OUO' },
+  { name: 'Highly Sedated', desc: 'SIZE Records', url: 'https://open.spotify.com/artist/14GNc5eQN6ia67v1ZhDMAv' },
   { name: '"Rūta"', desc: 'original score', url: 'https://www.imdb.com/title/tt31893591/' },
   { name: 'Geeky Punks', desc: 'member — synth education', url: 'https://geekypunks.com' },
 ]
 
 const links = [
-  { label: 'Spotify', url: 'https://open.spotify.com/artist/6JfKHChZiaq0DLe0JRCgRx' },
+  { label: 'Spotify', url: 'https://open.spotify.com/artist/5tqSjP3EGoOTriKogeTNO2' },
   { label: 'Bandcamp', url: 'https://leonsomov.bandcamp.com' },
   { label: 'SoundCloud', url: 'https://soundcloud.com/leonsomov' },
   { label: 'YouTube', url: 'https://www.youtube.com/@leonsomov' },
