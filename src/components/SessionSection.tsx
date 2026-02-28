@@ -23,6 +23,7 @@ export function SessionSection({ title, embedUrl }: SessionSectionProps) {
             className={styles.iframe}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
             allowFullScreen
             loading="lazy"
           />
