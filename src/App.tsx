@@ -159,6 +159,10 @@ export function App() {
           title="modular sessions"
           embedUrl="https://www.youtube.com/embed/videoseries?list=PLwWE9mKZM0Clbh7_8jaYmDk88Dj6hljNf"
         />
+        <SessionSection
+          title="ambient sessions"
+          embedUrl="https://www.youtube.com/embed/aFT3rKmN-Q0"
+        />
 
         {/* Footer */}
         <footer className={styles.footer}>
