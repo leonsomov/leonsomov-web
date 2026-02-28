@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FogCanvas } from './components/FogCanvas'
 import { Monogram } from './components/Monogram'
+import { SessionSection } from './components/SessionSection'
 import styles from './components/App.module.css'
 
 const projects = [
@@ -14,9 +15,9 @@ const projects = [
 ]
 
 const links = [
-  { label: 'Spotify', url: 'https://open.spotify.com/artist/6JfKHChZiaq0DLe0JRCgRx' },
-  { label: 'YouTube', url: 'https://www.youtube.com/@LEONSOMOV' },
-  { label: 'Instagram', url: 'https://www.instagram.com/leonsomov/' },
+  { label: 'Spotify', url: 'https://open.spotify.com/artist/5tqSjP3EGoOTriKogeTNO2' },
+  { label: 'YouTube', url: 'https://www.youtube.com/@leonsomov' },
+  { label: 'Instagram', url: 'https://www.instagram.com/leonsomov' },
 ]
 
 export function App() {
@@ -152,6 +153,12 @@ export function App() {
             loading="lazy"
           />
         </div>
+
+        {/* Sessions */}
+        <SessionSection
+          title="modular sessions"
+          embedUrl="https://www.youtube.com/embed/videoseries?list=PLwWE9mKZM0Clbh7_8jaYmDk88Dj6hljNf"
+        />
 
         {/* Footer */}
         <footer className={styles.footer}>
