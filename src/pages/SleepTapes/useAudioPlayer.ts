@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import * as Tone from 'tone'
 
 const TRACKS = [
   '/audio/sleep-tapes/01.mp3',
@@ -26,133 +25,100 @@ export function useAudioPlayer() {
     loading: false,
   })
 
-  const playersRef = useRef<Tone.Player[]>([])
-  const audioElRef = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const modeRef = useRef<Mode>('all')
+  const currentRef = useRef<number>(0)
 
   useEffect(() => {
-    const players = TRACKS.map((url) => {
-      const player = new Tone.Player(url).toDestination()
-      player.loop = false
-      return player
-    })
-    playersRef.current = players
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.volume = 0.8
+    audioRef.current = audio
 
     return () => {
-      players.forEach((p) => p.dispose())
+      audio.pause()
+      audio.src = ''
     }
   }, [])
 
-  const stopAll = useCallback(() => {
-    playersRef.current.forEach((p) => {
-      if (p.state === 'started') p.stop()
-    })
-  }, [])
+  const startTrack = useCallback((index: number, mode: Mode) => {
+    const audio = audioRef.current
+    if (!audio) return
 
-  const startTrack = useCallback(
-    (index: number, mode: Mode) => {
-      stopAll()
-      const player = playersRef.current[index]
-      if (!player || !player.loaded) return
+    modeRef.current = mode
+    currentRef.current = index
 
-      if (mode === 'single') {
-        player.loop = true
-        player.onstop = () => {}
-      } else {
-        player.loop = false
-        player.onstop = () => {
-          setState((prev) => {
-            if (!prev.isPlaying || prev.mode !== 'all') return prev
-            const next = (index + 1) % TRACKS.length
-            setTimeout(() => startTrack(next, 'all'), 0)
-            return { ...prev, currentTrack: next }
-          })
-        }
-      }
+    audio.pause()
+    audio.src = TRACKS[index]
+    audio.loop = mode === 'single'
 
-      player.start()
-      setState((prev) => ({
-        ...prev,
-        currentTrack: index,
-        isPlaying: true,
-        mode,
-        loading: false,
-      }))
+    // Handle track end in 'all' mode — advance to next
+    audio.onended = () => {
+      if (modeRef.current !== 'all') return
+      const next = (currentRef.current + 1) % TRACKS.length
+      startTrack(next, 'all')
+      setState((prev) => ({ ...prev, currentTrack: next }))
+    }
 
-      // Media Session API — keeps audio alive on lock screen
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: `Sleep Tape ${['I', 'II', 'III'][index]}`,
-          artist: 'Leon Somov',
-          album: 'Sleep Tapes',
-        })
-        navigator.mediaSession.playbackState = 'playing'
-      }
-    },
-    [stopAll]
-  )
+    const playPromise = audio.play()
+    if (playPromise) {
+      playPromise.catch(() => {})
+    }
 
-  const ensureAudioRoute = useCallback(async () => {
-    await Tone.start()
-    await Tone.loaded()
+    setState((prev) => ({
+      ...prev,
+      currentTrack: index,
+      isPlaying: true,
+      mode,
+      loading: false,
+    }))
 
-    // Set up media route once (for iOS silent mode + background)
-    if (!audioElRef.current) {
-      try {
-        const ctx = Tone.getContext().rawContext as AudioContext
-        const dest = ctx.createMediaStreamDestination()
-        const gain = Tone.getContext().createGain()
-        gain.connect(dest)
-        Tone.getDestination().connect(gain)
-
-        const audio = document.createElement('audio')
-        audio.srcObject = dest.stream
-        await audio.play()
-        audioElRef.current = audio
-      } catch {
-        // Fallback: direct Web Audio still works on desktop
-      }
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `Sleep Tape ${['I', 'II', 'III'][index]}`,
+        artist: 'Leon Somov',
+        album: 'Sleep Tapes',
+      })
+      navigator.mediaSession.playbackState = 'playing'
     }
   }, [])
 
   const playTrack = useCallback(
-    async (index: number) => {
+    (index: number) => {
       setState((prev) => ({ ...prev, loading: true }))
-      await ensureAudioRoute()
       startTrack(index, 'single')
     },
-    [startTrack, ensureAudioRoute]
+    [startTrack]
   )
 
-  const playAll = useCallback(async () => {
+  const playAll = useCallback(() => {
     setState((prev) => ({ ...prev, loading: true }))
-    await ensureAudioRoute()
     startTrack(0, 'all')
-  }, [startTrack, ensureAudioRoute])
+  }, [startTrack])
 
   const toggle = useCallback(() => {
-    const { currentTrack, isPlaying } = state
-    if (currentTrack === null) return
+    const audio = audioRef.current
+    if (!audio || state.currentTrack === null) return
 
-    const player = playersRef.current[currentTrack]
-    if (!player) return
-
-    if (isPlaying) {
-      player.stop()
-      player.onstop = () => {}
+    if (state.isPlaying) {
+      audio.pause()
       setState((prev) => ({ ...prev, isPlaying: false }))
       if ('mediaSession' in navigator) {
         navigator.mediaSession.playbackState = 'paused'
       }
     } else {
-      ensureAudioRoute().then(() => {
-        startTrack(currentTrack, state.mode)
-      })
+      audio.play().catch(() => {})
+      setState((prev) => ({ ...prev, isPlaying: true }))
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'playing'
+      }
     }
-  }, [state, startTrack, ensureAudioRoute])
+  }, [state.currentTrack, state.isPlaying])
 
   const setVolume = useCallback((v: number) => {
-    const db = v <= 0 ? -Infinity : 20 * Math.log10(v)
-    Tone.getDestination().volume.value = db
+    if (audioRef.current) {
+      audioRef.current.volume = v
+    }
     setState((prev) => ({ ...prev, volume: v }))
   }, [])
 
