@@ -86,7 +86,7 @@ export function useAudioPlayer() {
   const playTrack = useCallback(
     (index: number) => {
       setState((prev) => ({ ...prev, loading: true }))
-      startTrack(index, 'single')
+      startTrack(index, 'all')
     },
     [startTrack]
   )
