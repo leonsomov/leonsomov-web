@@ -37,6 +37,14 @@
   -webkit-user-select: none;
   margin: 0;
   padding: 0;
+  transition: filter 2s ease-in-out, text-shadow 2s ease-in-out;
+  filter: brightness(1);
+  text-shadow: none;
+}
+
+.tapeActive {
+  filter: brightness(1.15);
+  text-shadow: 0 0 20px rgba(232, 228, 222, 0.04);
 }
 
 .title {
@@ -64,6 +72,11 @@
 
 .reel {
   color: var(--fg-dim);
+  transition: color 2s ease-in-out;
+}
+
+.reelActive {
+  color: var(--fg);
 }
 
 .controls {

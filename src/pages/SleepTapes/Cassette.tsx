@@ -27,6 +27,8 @@ export function Cassette({
   const hub = isPlaying ? SPIN[frame] : 'o'
   const t = (i: number) =>
     currentTrack === i ? styles.activeTrack : styles.track
+  const reelClass = isPlaying ? `${styles.reel} ${styles.reelActive}` : styles.reel
+  const tapeClass = isPlaying ? `${styles.tape} ${styles.tapeActive}` : styles.tape
 
   const clickTrack = (i: number) => (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -34,7 +36,7 @@ export function Cassette({
   }
 
   return (
-    <pre className={styles.tape} onClick={onClickBody}>
+    <pre className={tapeClass} onClick={onClickBody}>
 {'.-----------------------------------------------------.\n'}
 {'|                                                     |\n'}
 {"|  .-----------------------------------------------.  |\n"}
@@ -49,7 +51,7 @@ export function Cassette({
 {'|                                                     |\n'}
 {"|  .-----------------------------------------------.  |\n"}
 {'|  |            .---.             .---.            |  |\n'}
-{'|  |            | '}<span className={styles.reel}>{hub}</span>{' |=============| '}<span className={styles.reel}>{hub}</span>{' |            |  |\n'}
+{'|  |            | '}<span className={reelClass}>{hub}</span>{' |=============| '}<span className={reelClass}>{hub}</span>{' |            |  |\n'}
 {'|  |            \'---\'             \'---\'            |  |\n'}
 {"|  '-----------------------------------------------'  |\n"}
 {'|                                                     |\n'}
