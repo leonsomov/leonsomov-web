@@ -4,11 +4,9 @@ import { Cassette } from './Cassette'
 import styles from './SleepTapes.module.css'
 
 const PHOTOS = [
-  '/photos/texture-1.webp',
-  '/photos/texture-2.webp',
-  '/photos/texture-gear.webp',
-  '/photos/long-exposure-1.webp',
-  '/photos/gear-detail.webp',
+  '/photos/silhouette-synths.webp',
+  '/photos/modular-cables.webp',
+  '/photos/ghost-motion.webp',
 ]
 
 export function SleepTapes() {
