@@ -107,8 +107,11 @@ export function SleepTapes() {
         </label>
       </div>
 
-      <p className={styles.tagline}>
-        close your eyes. let it carry you.
+      <p className={styles.note}>
+        three pieces recorded on the coast of the Balearic Sea,<br />
+        somewhere between Valencia and silence.<br />
+        for sleep. for stillness. for letting go.<br />
+        <span className={styles.noteQuiet}>this link is just for you.</span>
       </p>
 
       <a href="/" className={styles.backLink} aria-label="Back to Leon Somov">

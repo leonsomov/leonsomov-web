@@ -145,17 +145,18 @@
   cursor: pointer;
 }
 
-.tagline {
-  position: fixed;
-  bottom: 2rem;
-  left: 0;
-  right: 0;
-  text-align: center;
+.note {
   color: var(--fg-muted);
   font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  line-height: 1.6;
-  pointer-events: none;
+  letter-spacing: 0.08em;
+  line-height: 1.8;
+  text-align: center;
+  margin-top: 2rem;
+  max-width: 360px;
+}
+
+.noteQuiet {
+  opacity: 0.5;
 }
 
 .backLink {
