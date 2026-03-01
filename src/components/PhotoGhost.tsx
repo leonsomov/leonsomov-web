@@ -46,8 +46,13 @@ export function PhotoGhost() {
       } else if (event.type === 'chordChange') {
         photo = CHORD_PHOTOS[chordIndexRef.current % CHORD_PHOTOS.length]
         chordIndexRef.current++
+      } else if (event.type === 'noteOn') {
+        // Only some melody notes trigger photos (1 in 3 chance)
+        if (Math.random() > 0.33) return
+        const allPhotos = [...BOWL_PHOTOS, ...CHORD_PHOTOS]
+        photo = allPhotos[Math.floor(Math.random() * allPhotos.length)]
       } else {
-        return // noteOn doesn't trigger photos
+        return
       }
 
       activeRef.current = true

@@ -196,14 +196,27 @@ export function SynthControls() {
     for (const [k, v] of Object.entries(PARAMS)) init[k] = v.default
     return init
   })
+  const [hidden, setHidden] = useState(true) // hidden by default, Ctrl+Shift+S to show
   const [collapsed, setCollapsed] = useState(false)
-  const [bypassXY, setBypassXY] = useState(true) // start bypassed so sliders work
+  const [bypassXY, setBypassXY] = useState(false) // XY active by default
 
   // Sync bypass flag to sequencer
   useEffect(() => {
     const seq = useCompositionStore.getState()._sequencer
     if (seq) seq.bypassXY = bypassXY
   }, [bypassXY, playing])
+
+  // Ctrl+Shift+S to toggle visibility
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        setHidden(v => !v)
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const handleChange = useCallback((key: string, val: number) => {
     setValues(prev => ({ ...prev, [key]: val }))
@@ -218,7 +231,7 @@ export function SynthControls() {
     console.log('====================')
   }, [values])
 
-  if (!playing) return null
+  if (!playing || hidden) return null
 
   return (
     <div style={{

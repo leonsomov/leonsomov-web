@@ -57,6 +57,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
+        sleep_tapes: path.resolve(__dirname, 'sleep-tapes.html'),
         ...workletEntries,
       },
       output: {

@@ -1,0 +1,155 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 2rem;
+}
+
+.tape {
+  font-family: var(--font);
+  font-size: clamp(8px, 2.3vw, 14px);
+  line-height: 1.4;
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  margin: 0;
+  padding: 0;
+}
+
+.title {
+  color: var(--fg);
+}
+
+.subtitle {
+  color: var(--fg-dim);
+}
+
+.track {
+  color: var(--fg-dim);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.track:hover {
+  color: var(--fg);
+}
+
+.activeTrack {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.reel {
+  color: var(--fg-dim);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.hint {
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.hint:hover {
+  color: var(--fg-dim);
+}
+
+.volumeWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.volumeLabel {
+  color: var(--fg-muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+}
+
+.volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 2px;
+  background: var(--fg-muted);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-dim);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+  background: var(--fg);
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-dim);
+  border: none;
+  cursor: pointer;
+}
+
+.tagline {
+  position: fixed;
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+.backLink {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: color 0.3s;
+  opacity: 0.6;
+}
+
+.backLink:hover {
+  color: var(--fg-dim);
+  opacity: 1;
+}
+
+@media (max-width: 480px) {
+  .controls {
+    gap: 1.5rem;
+  }
+
+  .tagline {
+    bottom: 1.5rem;
+    font-size: 0.65rem;
+  }
+}
