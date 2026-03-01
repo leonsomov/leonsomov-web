@@ -149,18 +149,18 @@
   position: fixed;
   top: 1.5rem;
   left: 1.5rem;
-  color: var(--fg-muted);
+  color: var(--fg-dim);
   text-decoration: none;
   transition: opacity 0.3s;
-  opacity: 0.4;
+  opacity: 0.5;
 }
 
 .backLink:hover {
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 .monogram {
-  width: 48px;
+  width: 32px;
   height: auto;
   display: block;
 }
