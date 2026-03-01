@@ -1,12 +1,63 @@
+import { useState, useEffect } from 'react'
 import { useAudioPlayer } from './useAudioPlayer'
 import { Cassette } from './Cassette'
 import styles from './SleepTapes.module.css'
 
+const PHOTOS = [
+  '/photos/texture-1.webp',
+  '/photos/texture-2.webp',
+  '/photos/texture-gear.webp',
+  '/photos/long-exposure-1.webp',
+  '/photos/gear-detail.webp',
+]
+
 export function SleepTapes() {
-  const { currentTrack, isPlaying, volume, playTrack, playAll, toggle, setVolume } =
+  const { currentTrack, isPlaying, loading, volume, playTrack, playAll, toggle, setVolume } =
     useAudioPlayer()
 
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [photoVisible, setPhotoVisible] = useState(false)
+
+  // Ghost photos that fade in/out while playing
+  useEffect(() => {
+    if (!isPlaying) {
+      setPhotoVisible(false)
+      return
+    }
+
+    let mounted = true
+
+    const showPhoto = () => {
+      if (!mounted) return
+      const src = PHOTOS[Math.floor(Math.random() * PHOTOS.length)]
+      setPhoto(src)
+      setPhotoVisible(true)
+
+      // Fade out after 4-6s
+      const hideDelay = 4000 + Math.random() * 2000
+      setTimeout(() => {
+        if (!mounted) return
+        setPhotoVisible(false)
+      }, hideDelay)
+    }
+
+    // First photo after 3s
+    const firstTimeout = setTimeout(showPhoto, 3000)
+
+    // Then every 10-18s
+    const interval = setInterval(() => {
+      showPhoto()
+    }, 10000 + Math.random() * 8000)
+
+    return () => {
+      mounted = false
+      clearTimeout(firstTimeout)
+      clearInterval(interval)
+    }
+  }, [isPlaying])
+
   const handleClickBody = () => {
+    if (loading) return
     if (currentTrack === null) {
       playAll()
     } else {
@@ -14,8 +65,23 @@ export function SleepTapes() {
     }
   }
 
+  const hintText = loading
+    ? 'loading...'
+    : currentTrack === null
+      ? '\u25B6  play'
+      : isPlaying
+        ? '||  pause'
+        : '\u25B6  resume'
+
   return (
     <div className={styles.page}>
+      {photo && (
+        <div
+          className={`${styles.ghost} ${photoVisible ? styles.ghostVisible : ''}`}
+          style={{ backgroundImage: `url(${photo})` }}
+        />
+      )}
+
       <Cassette
         currentTrack={currentTrack}
         isPlaying={isPlaying}
@@ -25,11 +91,7 @@ export function SleepTapes() {
 
       <div className={styles.controls}>
         <span className={styles.hint} onClick={handleClickBody}>
-          {currentTrack === null
-            ? '\u25B6  play'
-            : isPlaying
-              ? '||  pause'
-              : '\u25B6  resume'}
+          {hintText}
         </span>
 
         <label className={styles.volumeWrap}>

@@ -6,6 +6,25 @@
   min-height: 100vh;
   min-height: 100dvh;
   padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ghost {
+  position: fixed;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 3s ease-in-out;
+  pointer-events: none;
+  z-index: 0;
+  filter: grayscale(1) brightness(0.15);
+  mix-blend-mode: screen;
+}
+
+.ghostVisible {
+  opacity: 0.3;
 }
 
 .tape {
