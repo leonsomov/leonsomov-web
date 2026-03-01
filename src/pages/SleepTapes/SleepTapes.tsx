@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAudioPlayer } from './useAudioPlayer'
 import { Cassette } from './Cassette'
+import { Monogram } from '../../components/Monogram'
 import styles from './SleepTapes.module.css'
 
 const PHOTOS = [
@@ -110,7 +111,9 @@ export function SleepTapes() {
         close your eyes. let it carry you.
       </p>
 
-      <a href="/" className={styles.backLink}>&larr; leonsomov.com</a>
+      <a href="/" className={styles.backLink} aria-label="Back to Leon Somov">
+        <Monogram className={styles.monogram} />
+      </a>
     </div>
   )
 }

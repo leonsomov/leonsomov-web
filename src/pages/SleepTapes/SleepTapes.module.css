@@ -150,16 +150,19 @@
   top: 1.5rem;
   left: 1.5rem;
   color: var(--fg-muted);
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
   text-decoration: none;
-  transition: color 0.3s;
-  opacity: 0.6;
+  transition: opacity 0.3s;
+  opacity: 0.4;
 }
 
 .backLink:hover {
-  color: var(--fg-dim);
-  opacity: 1;
+  opacity: 0.8;
+}
+
+.monogram {
+  width: 48px;
+  height: auto;
+  display: block;
 }
 
 @media (max-width: 480px) {
