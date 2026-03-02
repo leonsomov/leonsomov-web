@@ -43,7 +43,7 @@ export function Cassette({
 {'|  |                                               |  |\n'}
 {'|  |             '}<span className={styles.title}>{'S L E E P   T A P E S'}</span>{'             |  |\n'}
 {'|  |                                               |  |\n'}
-{'|  |              '}<span className={t(0)} onClick={clickTrack(0)}>I</span>{'       '}<span className={t(1)} onClick={clickTrack(1)}>II</span>{'      '}<span className={t(2)} onClick={clickTrack(2)}>III</span>{'              |  |\n'}
+{'|  |           '}<span className={t(0)} onClick={clickTrack(0)}>I</span>{'      '}<span className={t(1)} onClick={clickTrack(1)}>II</span>{'      '}<span className={t(2)} onClick={clickTrack(2)}>III</span>{'      '}<span className={t(3)} onClick={clickTrack(3)}>IV</span>{'          |  |\n'}
 {'|  |                                               |  |\n'}
 {'|  |              '}<span className={styles.subtitle}>{'beautiful  memories'}</span>{'              |  |\n'}
 {'|  |                                               |  |\n'}
