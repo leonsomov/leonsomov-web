@@ -20,14 +20,16 @@ export function MiniTV({ isPlaying }: MiniTVProps) {
       setGlitch(true)
       setTimeout(() => {
         setIndex((i) => (i + 1) % TV_PHOTOS.length)
-        setTimeout(() => setGlitch(false), 150)
-      }, 300)
+        setTimeout(() => setGlitch(false), 200)
+      }, 350)
     }, 7000)
 
     return () => clearInterval(interval)
   }, [isPlaying])
 
   const led = isPlaying ? styles.tvLedOn : styles.tvLed
+  const src = TV_PHOTOS[index]
+  const bg = { backgroundImage: `url(${src})` }
 
   return (
     <div className={styles.tvWrap}>
@@ -43,19 +45,19 @@ export function MiniTV({ isPlaying }: MiniTVProps) {
 {'|  |                                               |  |\n'}
 {'|  |                                               |  |\n'}
 {"|  '-----------------------------------------------'  |\n"}
-{'|    '}<span className={led}>{'(o)'}</span>{'                                       SONY   |\n'}
+{'|    '}<span className={led}>{'(o)'}</span>{'                                         TV   |\n'}
 {"'-----------------------------------------------------'"}
       </pre>
       <div className={`${styles.tvScreen} ${isPlaying ? styles.tvScreenOn : ''}`}>
-        <img
-          src={TV_PHOTOS[index]}
-          alt=""
-          className={styles.tvPhoto}
-          draggable={false}
-        />
+        <div className={styles.tvPhoto} style={bg} />
+        <div className={styles.tvPhotoR} style={bg} />
+        <div className={styles.tvPhotoB} style={bg} />
         <div className={styles.tvScanlines} />
+        <div className={styles.tvNoise} />
+        <div className={styles.tvVignette} />
         <div className={styles.tvTracking} />
         <div className={`${styles.tvGlitch} ${glitch ? styles.tvGlitchActive : ''}`} />
+        <div className={styles.tvFlicker} />
       </div>
     </div>
   )
