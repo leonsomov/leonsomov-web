@@ -110,22 +110,6 @@
   letter-spacing: 0.1em;
 }
 
-.radioLabel {
-  color: var(--fg-muted);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.radioLabel:hover {
-  color: var(--fg-dim);
-}
-
-.radioLabelOn {
-  color: var(--accent);
-}
-
 .volumeSlider {
   -webkit-appearance: none;
   appearance: none;
@@ -452,41 +436,6 @@
   0%   { opacity: 0; }
   50%  { opacity: 0.015; background: #fff; }
   100% { opacity: 0; }
-}
-
-/* ── Radio ── */
-
-.radioWrap {
-  font-family: var(--font);
-  font-size: clamp(8px, 2.3vw, 14px);
-  line-height: 1.4;
-  margin-top: 1rem;
-}
-
-.radioFrame {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: var(--fg-muted);
-  user-select: none;
-  -webkit-user-select: none;
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-  transition: filter 2s ease-in-out, text-shadow 2s ease-in-out;
-  filter: brightness(1);
-  text-shadow: none;
-}
-
-.radioFrameOn {
-  filter: brightness(1.15);
-  text-shadow: 0 0 20px rgba(232, 228, 222, 0.04);
-}
-
-.radioControls {
-  display: flex;
-  justify-content: center;
-  margin-top: 0.5rem;
 }
 
 @media (max-width: 480px) {

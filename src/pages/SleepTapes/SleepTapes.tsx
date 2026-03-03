@@ -111,7 +111,7 @@ export function SleepTapes() {
       </div>
 
       <p className={styles.note}>
-        three pieces recorded on the coast of the Balearic Sea,<br />
+        five pieces recorded on the coast of the Balearic Sea,<br />
         somewhere between Valencia and silence.<br />
         for sleep. for stillness. for letting go.<br />
         <span className={styles.noteQuiet}>this link is just for you.</span>
