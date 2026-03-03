@@ -5,6 +5,7 @@ const TRACKS = [
   '/audio/sleep-tapes/02.mp3',
   '/audio/sleep-tapes/03.mp3',
   '/audio/sleep-tapes/04.mp3',
+  '/audio/sleep-tapes/05.mp3',
 ]
 
 type Mode = 'single' | 'all'
@@ -76,7 +77,7 @@ export function useAudioPlayer() {
 
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: `Sleep Tape ${['I', 'II', 'III', 'IV'][index]}`,
+        title: `Sleep Tape ${['I', 'II', 'III', 'IV', 'V'][index]}`,
         artist: 'Leon Somov',
         album: 'Sleep Tapes',
       })
