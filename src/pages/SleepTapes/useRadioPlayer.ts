@@ -29,17 +29,27 @@ export function useRadioPlayer() {
 
   useEffect(() => {
     const audio = new Audio()
-    audio.preload = 'none'
+    audio.preload = 'auto'
     audio.volume = 0.25
     audioRef.current = audio
 
-    audio.onended = () => {
+    audio.addEventListener('ended', () => {
       const next = (episodeRef.current + 1) % EPISODES.length
       episodeRef.current = next
       audio.src = EPISODES[next]
+      audio.load()
       audio.play().catch(() => {})
       setState((prev) => ({ ...prev, episode: next }))
-    }
+    })
+
+    audio.addEventListener('error', () => {
+      const next = (episodeRef.current + 1) % EPISODES.length
+      episodeRef.current = next
+      audio.src = EPISODES[next]
+      audio.load()
+      audio.play().catch(() => {})
+      setState((prev) => ({ ...prev, episode: next }))
+    })
 
     return () => {
       audio.pause()
@@ -56,7 +66,12 @@ export function useRadioPlayer() {
       setState((prev) => ({ ...prev, isOn: false }))
     } else {
       audio.src = EPISODES[episodeRef.current]
-      audio.play().catch(() => {})
+      audio.load()
+      const onCanPlay = () => {
+        audio.play().catch(() => {})
+        audio.removeEventListener('canplay', onCanPlay)
+      }
+      audio.addEventListener('canplay', onCanPlay)
       setState((prev) => ({ ...prev, isOn: true }))
     }
   }, [state.isOn])
