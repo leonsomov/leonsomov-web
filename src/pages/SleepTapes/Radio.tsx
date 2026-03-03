@@ -21,7 +21,7 @@ export function Radio({ isOn, volume, onToggle, onVolumeChange }: RadioProps) {
 {'|  |  ===========================================  |  |\n'}
 {'|  |  ===========================================  |  |\n'}
 {"|  '-----------------------------------------------'  |\n"}
-{'|    '}<span className={led}>{'(o)'}</span>{'                         OLD TIME RADIO       |\n'}
+{'|    '}<span className={led}>{'(o)'}</span>{'                              SHORTWAVE       |\n'}
 {"'-----------------------------------------------------'"}
       </pre>
       <div className={styles.radioControls}>

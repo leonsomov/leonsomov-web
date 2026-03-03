@@ -1,12 +1,14 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 const EPISODES = [
-  'https://archive.org/download/OTRR_Dimension_X_Singles/Dimension_X_1950-04-08__01_OuterLimit.mp3',
-  'https://archive.org/download/OTRR_Suspense_Singles/Suspense%20420617%20001%20The%20Burning%20Court%20%28128-44%29%2028455%2030m00s.mp3',
-  'https://archive.org/download/OTRR_Whistler_Singles/Whistler_42-05-16_ep001_Retribution.mp3',
-  'https://archive.org/download/OTRR_X_Minus_One_Singles/XMinusOne55-08-25015ColdEquations.mp3',
-  'https://archive.org/download/OTRR_Inner_Sanctum_Mysteries_Singles/Inner%20Sanctum%20%2041-08-03%20The%20Tell-Tale%20Heart.mp3',
-  'https://archive.org/download/OTRR_Suspense_Singles/Suspense%20420624%20002%20Wet%20Saturday%20%28128-44%29%2028033%2029m10s.mp3',
+  'https://archive.org/download/ird059/tcp_d1_01_the_swedish_rhapsody_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d1_04_phonetic_alphabet_nato_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d1_06_the_lincolnshire_poacher_mi5_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d1_09_ready_ready_15728_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d2_01_magnetic_fields_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d2_05_the_buzzer_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d3_01_yosemite_sam_irdial.mp3',
+  'https://archive.org/download/ird059/tcp_d3_08_nancy_adam_susan_irdial.mp3',
 ]
 
 interface RadioState {
