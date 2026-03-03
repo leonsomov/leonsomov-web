@@ -110,6 +110,22 @@
   letter-spacing: 0.1em;
 }
 
+.radioLabel {
+  color: var(--fg-muted);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.radioLabel:hover {
+  color: var(--fg-dim);
+}
+
+.radioLabelOn {
+  color: var(--accent);
+}
+
 .volumeSlider {
   -webkit-appearance: none;
   appearance: none;

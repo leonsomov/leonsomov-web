@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAudioPlayer } from './useAudioPlayer'
+import { useRadioPlayer } from './useRadioPlayer'
 import { Cassette } from './Cassette'
 import { MiniTV } from './MiniTV'
 import { Monogram } from '../../components/Monogram'
@@ -14,6 +15,8 @@ const PHOTOS = [
 export function SleepTapes() {
   const { currentTrack, isPlaying, loading, volume, playTrack, playAll, toggle, setVolume } =
     useAudioPlayer()
+
+  const radio = useRadioPlayer()
 
   const [photo, setPhoto] = useState<string | null>(null)
   const [photoVisible, setPhotoVisible] = useState(false)
@@ -105,6 +108,24 @@ export function SleepTapes() {
             step="0.01"
             value={volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
+            className={styles.volumeSlider}
+          />
+        </label>
+
+        <label className={styles.volumeWrap}>
+          <span
+            className={`${styles.radioLabel} ${radio.isOn ? styles.radioLabelOn : ''}`}
+            onClick={(e) => { e.preventDefault(); radio.toggleRadio() }}
+          >
+            radio
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={radio.volume}
+            onChange={(e) => radio.setVolume(parseFloat(e.target.value))}
             className={styles.volumeSlider}
           />
         </label>
