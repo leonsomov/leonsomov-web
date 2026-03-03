@@ -33,23 +33,13 @@ export function useRadioPlayer() {
     audio.volume = 0.25
     audioRef.current = audio
 
-    audio.addEventListener('ended', () => {
+    audio.onended = () => {
       const next = (episodeRef.current + 1) % EPISODES.length
       episodeRef.current = next
       audio.src = EPISODES[next]
-      audio.load()
-      audio.play().catch(() => {})
+      audio.play().catch((e) => console.warn('[radio] next play failed:', e))
       setState((prev) => ({ ...prev, episode: next }))
-    })
-
-    audio.addEventListener('error', () => {
-      const next = (episodeRef.current + 1) % EPISODES.length
-      episodeRef.current = next
-      audio.src = EPISODES[next]
-      audio.load()
-      audio.play().catch(() => {})
-      setState((prev) => ({ ...prev, episode: next }))
-    })
+    }
 
     return () => {
       audio.pause()
@@ -65,13 +55,13 @@ export function useRadioPlayer() {
       audio.pause()
       setState((prev) => ({ ...prev, isOn: false }))
     } else {
-      audio.src = EPISODES[episodeRef.current]
-      audio.load()
-      const onCanPlay = () => {
-        audio.play().catch(() => {})
-        audio.removeEventListener('canplay', onCanPlay)
-      }
-      audio.addEventListener('canplay', onCanPlay)
+      const url = EPISODES[episodeRef.current]
+      console.log('[radio] playing:', url)
+      audio.src = url
+      audio.play().then(
+        () => console.log('[radio] playing OK'),
+        (e) => console.warn('[radio] play failed:', e)
+      )
       setState((prev) => ({ ...prev, isOn: true }))
     }
   }, [state.isOn])
