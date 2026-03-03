@@ -3,6 +3,7 @@ import { useAudioPlayer } from './useAudioPlayer'
 import { useRadioPlayer } from './useRadioPlayer'
 import { Cassette } from './Cassette'
 import { MiniTV } from './MiniTV'
+import { Radio } from './Radio'
 import { Monogram } from '../../components/Monogram'
 import styles from './SleepTapes.module.css'
 
@@ -94,6 +95,13 @@ export function SleepTapes() {
         onClickTrack={playTrack}
       />
 
+      <Radio
+        isOn={radio.isOn}
+        volume={radio.volume}
+        onToggle={radio.toggleRadio}
+        onVolumeChange={radio.setVolume}
+      />
+
       <div className={styles.controls}>
         <span className={styles.hint} onClick={handleClickBody}>
           {hintText}
@@ -108,24 +116,6 @@ export function SleepTapes() {
             step="0.01"
             value={volume}
             onChange={(e) => setVolume(parseFloat(e.target.value))}
-            className={styles.volumeSlider}
-          />
-        </label>
-
-        <label className={styles.volumeWrap}>
-          <span
-            className={`${styles.radioLabel} ${radio.isOn ? styles.radioLabelOn : ''}`}
-            onClick={(e) => { e.preventDefault(); radio.toggleRadio() }}
-          >
-            radio
-          </span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={radio.volume}
-            onChange={(e) => radio.setVolume(parseFloat(e.target.value))}
             className={styles.volumeSlider}
           />
         </label>
