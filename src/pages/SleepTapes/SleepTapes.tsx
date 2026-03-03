@@ -108,7 +108,7 @@ export function SleepTapes() {
         </span>
 
         <label className={styles.volumeWrap}>
-          <span className={styles.volumeLabel}>vol</span>
+          <span className={styles.volumeLabel}>tapes</span>
           <input
             type="range"
             min="0"

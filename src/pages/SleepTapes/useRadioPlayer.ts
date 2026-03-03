@@ -31,19 +31,9 @@ export function useRadioPlayer() {
     const audio = new Audio()
     audio.preload = 'none'
     audio.volume = 0.25
-    audio.crossOrigin = 'anonymous'
     audioRef.current = audio
 
     audio.onended = () => {
-      const next = (episodeRef.current + 1) % EPISODES.length
-      episodeRef.current = next
-      audio.src = EPISODES[next]
-      audio.play().catch(() => {})
-      setState((prev) => ({ ...prev, episode: next }))
-    }
-
-    audio.onerror = () => {
-      // Try next episode on error
       const next = (episodeRef.current + 1) % EPISODES.length
       episodeRef.current = next
       audio.src = EPISODES[next]
