@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAudioPlayer } from './useAudioPlayer'
 import { Cassette } from './Cassette'
+import { MiniTV } from './MiniTV'
 import { Monogram } from '../../components/Monogram'
 import styles from './SleepTapes.module.css'
 
@@ -80,6 +81,8 @@ export function SleepTapes() {
           style={{ backgroundImage: `url(${photo})` }}
         />
       )}
+
+      <MiniTV isPlaying={isPlaying} />
 
       <Cassette
         currentTrack={currentTrack}
