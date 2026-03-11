@@ -48,7 +48,7 @@ export function Cassette({
 {'|  |                                               |  |\n'}
 {'|  |         '}<span className={t(0)} onClick={clickTrack(0)}>I</span>{'     '}<span className={t(1)} onClick={clickTrack(1)}>II</span>{'     '}<span className={t(2)} onClick={clickTrack(2)}>III</span>{'     '}<span className={t(3)} onClick={clickTrack(3)}>IV</span>{'     '}<span className={t(4)} onClick={clickTrack(4)}>V</span>{'         |  |\n'}
 {'|  |                                               |  |\n'}
-{'|  |              '}<span className={styles.subtitle}>{'beautiful  memories'}</span>{'              |  |\n'}
+{'|  |          '}<span className={styles.subtitle}>{'vol. 1 — mediterranean coast'}</span>{'         |  |\n'}
 {'|  |                                               |  |\n'}
 {"|  '-----------------------------------------------'  |\n"}
 {'|                                                     |\n'}

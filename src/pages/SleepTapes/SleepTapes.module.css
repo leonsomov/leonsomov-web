@@ -469,12 +469,20 @@
 }
 
 @media (max-width: 480px) {
-  .controls {
-    gap: 1.5rem;
+  .page {
+    padding: 1.5rem;
   }
 
-  .tagline {
-    bottom: 1.5rem;
-    font-size: 0.65rem;
+  .tvWrap {
+    margin-bottom: 1.5rem;
+  }
+
+  .controls {
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .note {
+    margin-top: 2rem;
   }
 }
