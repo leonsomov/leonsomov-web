@@ -115,7 +115,7 @@ export function SleepTapes() {
         five pieces, thirty-five minutes,<br />
         recorded on the coast of the Balearic Sea,<br />
         somewhere between Valencia and silence.<br />
-        for sleep. for stillness. for letting go.
+        for the spaces between waking and sleep.
       </p>
 
       <a href="/" className={styles.backLink} aria-label="Back to Leon Somov">
