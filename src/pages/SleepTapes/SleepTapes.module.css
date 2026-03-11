@@ -423,6 +423,37 @@
   50%      { opacity: 1; }
 }
 
+/* Blinking cursor — centered loading indicator */
+
+.loadingCursor {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.8s ease-out;
+}
+
+.loadingCursorHidden {
+  opacity: 0;
+}
+
+.loadingCursor span {
+  color: var(--fg-dim);
+  font-family: var(--font);
+  font-size: 1.2rem;
+  font-weight: 300;
+  animation: cursorBlink 1s steps(1) infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+
 /* TV idle — static visible, no photo */
 
 .tvScreenIdle {
