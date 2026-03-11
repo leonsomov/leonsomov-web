@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAudioPlayer } from './useAudioPlayer'
-import { Cassette } from './Cassette'
-import { MiniTV } from './MiniTV'
+import { FogCanvas } from '../../components/FogCanvas'
 import { Monogram } from '../../components/Monogram'
 import styles from './SleepTapes.module.css'
 
@@ -10,6 +9,8 @@ const PHOTOS = [
   '/photos/modular-cables.webp',
   '/photos/ghost-motion.webp',
 ]
+
+const TRACK_NUMERALS = ['I', 'II', 'III', 'IV', 'V']
 
 export function SleepTapes() {
   const { currentTrack, isPlaying, loading, volume, playTrack, playAll, toggle, setVolume } =
@@ -33,7 +34,6 @@ export function SleepTapes() {
       setPhoto(src)
       setPhotoVisible(true)
 
-      // Fade out after 4-6s
       const hideDelay = 4000 + Math.random() * 2000
       setTimeout(() => {
         if (!mounted) return
@@ -41,10 +41,8 @@ export function SleepTapes() {
       }, hideDelay)
     }
 
-    // First photo after 3s
     const firstTimeout = setTimeout(showPhoto, 3000)
 
-    // Then every 10-18s
     const interval = setInterval(() => {
       showPhoto()
     }, 10000 + Math.random() * 8000)
@@ -56,7 +54,7 @@ export function SleepTapes() {
     }
   }, [isPlaying])
 
-  const handleClickBody = () => {
+  const handlePlay = () => {
     if (loading) return
     if (currentTrack === null) {
       playAll()
@@ -65,16 +63,12 @@ export function SleepTapes() {
     }
   }
 
-  const hintText = loading
-    ? 'loading...'
-    : currentTrack === null
-      ? '\u25B6  play'
-      : isPlaying
-        ? '||  pause'
-        : '\u25B6  resume'
-
   return (
     <div className={styles.page}>
+      {/* Background layers */}
+      <FogCanvas />
+      <div className={styles.bgPhoto} />
+
       {photo && (
         <div
           className={`${styles.ghost} ${photoVisible ? styles.ghostVisible : ''}`}
@@ -82,21 +76,51 @@ export function SleepTapes() {
         />
       )}
 
-      <MiniTV isPlaying={isPlaying} />
+      {/* Content */}
+      <div className={styles.content}>
+        <h1 className={`${styles.title} ${isPlaying ? styles.titleGlow : ''}`}>
+          Sleep Tapes
+        </h1>
+        <p className={styles.subtitle}>vol. 1 — mediterranean coast</p>
 
-      <Cassette
-        currentTrack={currentTrack}
-        isPlaying={isPlaying}
-        loading={loading}
-        onClickBody={handleClickBody}
-        onClickTrack={playTrack}
-      />
+        <button
+          className={`${styles.playBtn} ${isPlaying ? styles.playBtnPlaying : ''} ${loading ? styles.playBtnLoading : ''}`}
+          onClick={handlePlay}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? (
+            <span className={styles.pauseIcon}>
+              <span className={styles.pauseBar} />
+              <span className={styles.pauseBar} />
+            </span>
+          ) : (
+            <span className={styles.playIcon} />
+          )}
+        </button>
 
+        <div className={styles.tracks}>
+          {TRACK_NUMERALS.map((numeral, i) => (
+            <span
+              key={i}
+              className={`${styles.trackNum} ${currentTrack === i ? styles.trackNumActive : ''}`}
+              onClick={() => playTrack(i)}
+            >
+              {numeral}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Note */}
+      <p className={styles.note}>
+        five pieces, thirty-five minutes,<br />
+        recorded on the coast of the Balearic Sea,<br />
+        somewhere between Valencia and silence.<br />
+        for the spaces between waking and sleep.
+      </p>
+
+      {/* Volume */}
       <div className={styles.controls}>
-        <span className={`${styles.hint} ${loading ? styles.hintLoading : ''}`} onClick={handleClickBody}>
-          {hintText}
-        </span>
-
         <label className={styles.volumeWrap}>
           <span className={styles.volumeLabel}>vol</span>
           <input
@@ -111,13 +135,7 @@ export function SleepTapes() {
         </label>
       </div>
 
-      <p className={styles.note}>
-        five pieces, thirty-five minutes,<br />
-        recorded on the coast of the Balearic Sea,<br />
-        somewhere between Valencia and silence.<br />
-        for the spaces between waking and sleep.
-      </p>
-
+      {/* Back */}
       <a href="/" className={styles.backLink} aria-label="Back to Leon Somov">
         <Monogram className={styles.monogram} />
       </a>
