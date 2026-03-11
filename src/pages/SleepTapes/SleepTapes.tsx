@@ -87,12 +87,13 @@ export function SleepTapes() {
       <Cassette
         currentTrack={currentTrack}
         isPlaying={isPlaying}
+        loading={loading}
         onClickBody={handleClickBody}
         onClickTrack={playTrack}
       />
 
       <div className={styles.controls}>
-        <span className={styles.hint} onClick={handleClickBody}>
+        <span className={`${styles.hint} ${loading ? styles.hintLoading : ''}`} onClick={handleClickBody}>
           {hintText}
         </span>
 

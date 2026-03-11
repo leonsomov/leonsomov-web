@@ -62,6 +62,16 @@ export function useAudioPlayer() {
       setState((prev) => ({ ...prev, currentTrack: next }))
     }
 
+    // Clear loading when audio is buffered enough to play
+    audio.oncanplay = () => {
+      setState((prev) => ({ ...prev, loading: false }))
+    }
+
+    // Clear loading on error too
+    audio.onerror = () => {
+      setState((prev) => ({ ...prev, loading: false, isPlaying: false }))
+    }
+
     const playPromise = audio.play()
     if (playPromise) {
       playPromise.catch(() => {})
@@ -72,7 +82,7 @@ export function useAudioPlayer() {
       currentTrack: index,
       isPlaying: true,
       mode,
-      loading: false,
+      loading: true,
     }))
 
     if ('mediaSession' in navigator) {
