@@ -82,10 +82,6 @@ export function SleepTapes() {
         />
       )}
 
-      <div className={`${styles.loadingCursor} ${!loading ? styles.loadingCursorHidden : ''}`}>
-        <span>_</span>
-      </div>
-
       <MiniTV isPlaying={isPlaying} />
 
       <Cassette
