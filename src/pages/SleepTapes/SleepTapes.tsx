@@ -10,7 +10,13 @@ const PHOTOS = [
   '/photos/ghost-motion.webp',
 ]
 
-const TRACK_NUMERALS = ['I', 'II', 'III', 'IV', 'V']
+const TRACKS_INFO = [
+  { numeral: 'I', duration: '13:31' },
+  { numeral: 'II', duration: '4:10' },
+  { numeral: 'III', duration: '5:46' },
+  { numeral: 'IV', duration: '4:51' },
+  { numeral: 'V', duration: '6:15' },
+]
 
 export function SleepTapes() {
   const { currentTrack, isPlaying, loading, volume, playTrack, playAll, toggle, setVolume } =
@@ -99,13 +105,14 @@ export function SleepTapes() {
         </button>
 
         <div className={styles.tracks}>
-          {TRACK_NUMERALS.map((numeral, i) => (
+          {TRACKS_INFO.map((track, i) => (
             <span
               key={i}
               className={`${styles.trackNum} ${currentTrack === i ? styles.trackNumActive : ''}`}
               onClick={() => playTrack(i)}
             >
-              {numeral}
+              {track.numeral}
+              <span className={styles.trackDuration}>{track.duration}</span>
             </span>
           ))}
         </div>
