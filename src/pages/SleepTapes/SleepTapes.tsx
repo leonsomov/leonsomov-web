@@ -122,8 +122,8 @@ export function SleepTapes() {
       <p className={styles.note}>
         five pieces, thirty-five minutes,<br />
         recorded on the coast of the Balearic Sea,<br />
-        somewhere between Valencia and silence.<br />
-        for the dissolving edge of waking and sleep.
+        along the shore from Valencia to silence.<br />
+        for the spaces between waking and sleep.
       </p>
 
       {/* Volume */}
