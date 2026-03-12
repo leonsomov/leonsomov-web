@@ -123,7 +123,7 @@ export function SleepTapes() {
         five pieces, thirty-five minutes,<br />
         recorded on the coast of the Balearic Sea,<br />
         somewhere between Valencia and silence.<br />
-        for the spaces between waking and sleep.
+        for the dissolving edge of waking and sleep.
       </p>
 
       {/* Volume */}
