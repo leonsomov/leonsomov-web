@@ -503,12 +503,140 @@ html, body {
 .columns-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .columns-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
+/* ── Mobile / iPhone ──────────────────────────────────────────── */
+
 @media (max-width: 900px) {
   .columns-2, .columns-3 { grid-template-columns: 1fr; }
-  .control { width: 62px; }
-  .knob-container { width: 40px; height: 40px; }
-  #top-bar { flex-wrap: wrap; }
-  .toolbar { width: 100%; }
+  #top-bar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+  .toolbar { width: 100%; justify-content: center; flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  html { font-size: 13px; }
+
+  #top-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px;
+    justify-content: center;
+  }
+
+  #top-bar .logo { font-size: 12px; letter-spacing: 2px; }
+
+  .patch-name-input {
+    width: 100%;
+    font-size: 15px;
+    padding: 8px 10px;
+    text-align: center;
+    order: -1;
+  }
+
+  .midi-status { font-size: 9px; }
+
+  .bank-program select,
+  .bank-program input[type="number"] {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+
+  .toolbar {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  /* Tabs: horizontal scroll */
+  #tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 8px;
+    gap: 0;
+  }
+
+  .tab {
+    padding: 10px 12px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  #editor { padding: 8px; }
+
+  .section { margin-bottom: 8px; border-radius: 4px; }
+  .section-title { padding: 6px 10px; font-size: 8px; }
+  .section-body { padding: 10px 6px; gap: 0; justify-content: center; }
+
+  /* Bigger knobs for touch */
+  .control {
+    width: 72px;
+    padding: 4px 2px;
+  }
+
+  .knob-container {
+    width: 52px;
+    height: 52px;
+    touch-action: none;
+  }
+
+  .control-label { font-size: 8px; height: 18px; }
+  .control-value { font-size: 10px; }
+
+  .control-dropdown { min-width: 80px; }
+  .control-dropdown select { font-size: 12px; padding: 6px 4px; }
+
+  .toggle-btn { width: 34px; height: 18px; }
+
+  /* Envelope display */
+  .env-display { height: 80px; }
+
+  /* Mod matrix */
+  .mod-matrix-grid {
+    grid-template-columns: 22px 1fr 1fr auto;
+    gap: 3px 4px;
+    font-size: 10px;
+    padding: 8px;
+  }
+
+  .mod-matrix-grid select { font-size: 11px; padding: 4px 2px; }
+
+  /* Generator buttons */
+  .gen-wrap { padding: 24px 12px; gap: 8px; }
+  .gen-cat-btn { padding: 14px 20px; font-size: 11px; letter-spacing: 1.5px; }
+
+  /* Library */
+  .library-toolbar {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .library-search { max-width: 100%; font-size: 13px; padding: 8px; }
+
+  .library-grid {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .library-item { padding: 10px 8px; }
+  .library-item .name { font-size: 12px; }
+
+  .tag { padding: 4px 8px; font-size: 9px; }
+
+  /* Wavetable */
+  .gen-wrap canvas { max-width: 100%; height: auto; }
+
+  /* Arp steps */
+  .arp-steps { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Columns stack */
+  .columns-2, .columns-3 { grid-template-columns: 1fr; gap: 8px; }
 }
 
 /* ── Toast ────────────────────────────────────────────────────────── */

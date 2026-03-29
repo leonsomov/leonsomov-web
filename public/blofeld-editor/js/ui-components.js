@@ -97,6 +97,7 @@ export function createKnob(param, value, onChange) {
   let dragging = false;
   let startY, startValue;
 
+  // Mouse drag
   container.addEventListener('mousedown', (e) => {
     dragging = true;
     startY = e.clientY;
@@ -125,6 +126,30 @@ export function createKnob(param, value, onChange) {
       document.body.style.cursor = '';
     }
   });
+
+  // Touch drag (iPhone/iPad)
+  container.addEventListener('touchstart', (e) => {
+    dragging = true;
+    startY = e.touches[0].clientY;
+    startValue = currentValue;
+    e.preventDefault();
+  }, { passive: false });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    const dy = startY - e.touches[0].clientY;
+    const range = param.max - param.min;
+    const step = param.step || 1;
+    let newVal = startValue + Math.round(dy * range / 150 / step) * step;
+    newVal = Math.max(param.min, Math.min(param.max, newVal));
+    if (newVal !== currentValue) {
+      updateVisual(newVal);
+      onChange(param.index, newVal);
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => { dragging = false; });
 
   // Double-click to reset
   container.addEventListener('dblclick', () => {
