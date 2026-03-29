@@ -13,6 +13,8 @@ const ASSETS = [
   '/blofeld-editor/js/ui-components.js',
   '/blofeld-editor/js/wavetable.js',
   '/blofeld-editor/manifest.json',
+  '/blofeld-editor/icon-192.png',
+  '/blofeld-editor/icon-512.png',
   '/blofeld-editor/presets.json',
 ];
 
