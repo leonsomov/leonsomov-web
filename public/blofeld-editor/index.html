@@ -677,16 +677,26 @@
         receiveBankBtn.textContent = `Bank ${bankName}...`;
         receiveBankBtn.disabled = true;
         let count = 0;
+        let failures = 0;
         for (let prog = 0; prog < 128; prog++) {
           try {
             receiveBankBtn.textContent = `${bankName} ${prog+1}/128`;
-            const dump = await midi.requestSound(bank, prog, 5000);
+            const dump = await midi.requestSound(bank, prog, 8000);
             const parsed = sysex.decodeSoundDump(dump);
             if (parsed) {
               librarian.add(parsed.data, { bank, program: prog, source: `Bank ${bankName}` });
               count++;
             }
-          } catch (e) { break; }
+            failures = 0;
+          } catch (e) {
+            failures++;
+            if (failures >= 3) {
+              toast(`Stopped at ${prog+1} after 3 consecutive timeouts`, 'error');
+              break;
+            }
+          }
+          // Wait between requests — Blofeld needs time
+          await new Promise(r => setTimeout(r, 150));
         }
         toast(`Received ${count} presets from Bank ${bankName}`, 'success');
         updateLibraryView();
@@ -694,7 +704,27 @@
         receiveBankBtn.disabled = false;
       });
 
-      toolbar.append(searchInput, receiveBtn, receiveBankBtn, importBtn, exportBtn, saveCurrentBtn, statsSpan);
+      // Load bundled preset pack
+      const loadPackBtn = document.createElement('button');
+      loadPackBtn.className = 'btn';
+      loadPackBtn.textContent = 'Load Free Presets';
+      loadPackBtn.addEventListener('click', () => {
+        fetch('presets.json').then(r => r.json()).then(presets => {
+          let added = 0;
+          for (const p of presets) {
+            // Check if already exists by name
+            const exists = librarian.presets.some(x => x.name === p.name);
+            if (!exists) {
+              librarian.add(new Uint8Array(p.data), { source: p.source });
+              added++;
+            }
+          }
+          toast(added > 0 ? `Added ${added} presets` : 'All presets already loaded', 'info', 2000);
+          updateLibraryView();
+        }).catch(() => toast('Could not load presets', 'error'));
+      });
+
+      toolbar.append(searchInput, receiveBtn, receiveBankBtn, importBtn, exportBtn, saveCurrentBtn, loadPackBtn, statsSpan);
 
       // Category filter
       const catBar = document.createElement('div');
@@ -737,10 +767,8 @@
       if (librarian.presets.length === 0) {
         fetch('presets.json').then(r => r.json()).then(presets => {
           for (const p of presets) {
-            const data = new Uint8Array(p.data);
-            librarian.add(data, { source: p.source });
+            librarian.add(new Uint8Array(p.data), { source: p.source });
           }
-          toast(`Loaded ${presets.length} bundled presets`, 'info', 2000);
           updateLibraryView();
         }).catch(() => {});
       }
@@ -788,6 +816,6 @@
       if (statsEl) statsEl.textContent = `${stats.total} presets`;
     }
   </script>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");</script>
 </body>
 </html>
