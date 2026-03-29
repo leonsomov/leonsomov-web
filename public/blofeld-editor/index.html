@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blofeld Editor</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#0c0c0c">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div class="logo">BLOFELD<span>Editor</span></div>
+
+    <div class="midi-status" id="midi-status">
+      <div class="dot" id="midi-dot"></div>
+      <span id="midi-status-text">Disconnected</span>
+      <div class="midi-activity">
+        <div class="activity-led" id="led-in" title="MIDI In">IN</div>
+        <div class="activity-led" id="led-out" title="MIDI Out">OUT</div>
+      </div>
+    </div>
+
+    <input type="text" class="patch-name-input" id="patch-name"
+           value="Init" maxlength="16" placeholder="Patch Name">
+
+    <div class="bank-program">
+      <select id="bank-select">
+        <option value="0">A</option>
+        <option value="1">B</option>
+        <option value="2">C</option>
+        <option value="3">D</option>
+        <option value="4">E</option>
+        <option value="5">F</option>
+        <option value="6">G</option>
+        <option value="7">H</option>
+      </select>
+      <input type="number" id="program-number" min="1" max="128" value="1">
+    </div>
+
+    <div class="toolbar">
+      <button class="btn" id="btn-connect" title="Connect to Blofeld">Connect</button>
+      <button class="btn" id="btn-receive" title="Receive current sound from Blofeld">Receive</button>
+      <button class="btn btn-primary" id="btn-send" title="Send full sound dump to edit buffer">Send All</button>
+      <button class="btn" id="btn-store" title="Write sound to Blofeld memory">Write</button>
+      <button class="btn" id="btn-recall" title="Recall sound from Blofeld bank">Recall</button>
+      <button class="btn" id="btn-init" title="Initialize patch">Init</button>
+      <button class="btn" id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="btn" id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div id="main-content"></div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    
+    const { BlofeldMidi } = await import('./js/midi.js');
+    const sysex = await import('./js/sysex.js');
+    const { Editor } = await import('./js/editor.js');
+    const { Librarian } = await import('./js/librarian.js');
+    const { getCategories, generate, generateRandom, mutate, generateWithWavetable } = await import('./js/generator.js');
+    const { toast, createControl } = await import('./js/ui-components.js');
+    const { CATEGORIES, createInitSound, decodePatchName } = await import('./js/blofeld-params.js');
+    const { generateName } = await import('./js/names.js');
+    const wt = await import('./js/wavetable.js');
+
+    // ── Initialize ──────────────────────────────────────────────────
+
+    const midi = new BlofeldMidi();
+    midi.linkSysex(sysex);
+    const editor = new Editor(midi);
+    const librarian = new Librarian();
+
+    let libraryListEl;
+
+    const mainContent = document.getElementById('main-content');
+    editor.render(mainContent);
+
+    // Add special panels
+    renderWavetablePanel();
+    renderGeneratorPanel();
+    renderLibraryPanel();
+
+    // ── MIDI Connection ─────────────────────────────────────────────
+
+    const statusEl = document.getElementById('midi-status');
+    const statusText = document.getElementById('midi-status-text');
+
+    async function connect() {
+      try {
+        await midi.init();
+        const detected = midi.autoDetect();
+
+        if (detected.input && detected.output) {
+          statusEl.classList.add('connected');
+          statusText.textContent = detected.input;
+          toast(`Connected: ${detected.input}`, 'success');
+        } else {
+          // Auto-detect failed — show manual port selection
+          // Always show selector so user can pick the right ports
+          showPortSelector();
+        }
+      } catch (e) {
+        if (e.message.includes('denied') || e.message.includes('SecurityError')) {
+          toast('MIDI access denied. Check browser permissions (SysEx must be allowed).', 'error', 5000);
+        } else {
+          toast(e.message, 'error');
+        }
+      }
+    }
+
+    function showPortSelector() {
+      const inputs = midi.getInputs();
+      const outputs = midi.getOutputs();
+
+      if (inputs.length === 0 && outputs.length === 0) {
+        toast('No MIDI ports found. Is the Blofeld connected via USB and powered on?', 'error', 5000);
+        return;
+      }
+
+      const dialog = document.createElement('div');
+      dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center';
+
+      const box = document.createElement('div');
+      box.style.cssText = 'background:var(--bg-panel);border:1px solid var(--border);padding:20px;border-radius:6px;min-width:360px';
+
+      box.innerHTML = `
+        <h3 style="color:var(--text-bright);margin-bottom:4px">Select MIDI Ports</h3>
+        <p style="color:var(--text-dim);font-size:11px;margin-bottom:12px">Select the Blofeld's MIDI input and output ports. If using USB, both should have the same name.</p>
+        <label style="display:block;margin-bottom:8px;color:var(--text-dim);font-size:12px">Input (from Blofeld):
+          <select id="port-input" style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:4px;margin-top:4px">
+            ${inputs.map(p => `<option value="${p.id}">${p.name}${p.manufacturer ? ' (' + p.manufacturer + ')' : ''}</option>`).join('')}
+          </select>
+        </label>
+        <label style="display:block;margin-bottom:12px;color:var(--text-dim);font-size:12px">Output (to Blofeld):
+          <select id="port-output" style="width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:4px;margin-top:4px">
+            ${outputs.map(p => `<option value="${p.id}">${p.name}${p.manufacturer ? ' (' + p.manufacturer + ')' : ''}</option>`).join('')}
+          </select>
+        </label>
+        <label style="display:block;margin-bottom:16px;color:var(--text-dim);font-size:12px">Device ID (usually 0):
+          <input type="number" id="port-device-id" min="0" max="126" value="0" style="width:50px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:4px;margin-left:8px">
+        </label>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" id="port-cancel">Cancel</button>
+          <button class="btn btn-primary" id="port-ok">Connect</button>
+        </div>
+      `;
+
+      dialog.appendChild(box);
+      document.body.appendChild(dialog);
+
+      document.getElementById('port-cancel').onclick = () => dialog.remove();
+      document.getElementById('port-ok').onclick = () => {
+        midi.connectInput(document.getElementById('port-input').value);
+        midi.connectOutput(document.getElementById('port-output').value);
+        midi.deviceId = parseInt(document.getElementById('port-device-id').value) || 0;
+        statusEl.classList.add('connected');
+        statusText.textContent = midi.input?.name || 'Connected';
+        toast('Connected', 'success');
+        dialog.remove();
+        // Auto-sync: load current edit buffer from Blofeld
+        autoSync();
+      };
+    }
+
+    // ── Auto-Sync (load edit buffer after connecting) ────────────
+
+    async function autoSync() {
+      if (!midi.isConnected) return;
+      try {
+        toast('Requesting current sound...', 'info', 1500);
+        const data = await midi.requestEditBuffer(5000);
+        const parsed = sysex.decodeSoundDump(data);
+        if (parsed) {
+          editor.loadSound(parsed.data);
+          document.getElementById('patch-name').value = parsed.name;
+          toast(`Synced: ${parsed.name}`, 'success');
+        }
+      } catch (e) {
+        toast('Could not read edit buffer. Blofeld may need Ctrl Send = SysEx in Global settings.', 'error', 5000);
+      }
+    }
+
+    // ── MIDI Activity LEDs ──────────────────────────────────────────
+
+    const ledIn = document.getElementById('led-in');
+    const ledOut = document.getElementById('led-out');
+    let inTimer, outTimer;
+
+    midi.on('midiIn', () => {
+      ledIn.classList.add('flash-in');
+      clearTimeout(inTimer);
+      inTimer = setTimeout(() => ledIn.classList.remove('flash-in'), 80);
+    });
+
+    midi.on('midiOut', () => {
+      ledOut.classList.add('flash-out');
+      clearTimeout(outTimer);
+      outTimer = setTimeout(() => ledOut.classList.remove('flash-out'), 80);
+    });
+
+    // ── MIDI Events — Bidirectional Live Sync ───────────────────────
+
+    midi.on('soundDump', (data) => {
+      const parsed = sysex.decodeSoundDump(data);
+      if (parsed) {
+        editor.loadSound(parsed.data);
+        document.getElementById('patch-name').value = parsed.name;
+        if (!parsed.isEditBuffer) {
+          document.getElementById('bank-select').value = parsed.bank;
+          document.getElementById('program-number').value = parsed.program + 1;
+        }
+        toast(`Received: ${parsed.name}`, 'info');
+      }
+    });
+
+    // Blofeld → UI: when a knob is turned on the hardware (SysEx param change)
+    midi.on('paramChange', ({ paramIndex, value }) => {
+      editor.setValue(paramIndex, value, false);
+    });
+
+    // Handle regular MIDI messages (CC)
+    midi.on('midi', ({ data }) => {
+      // Could map CCs to parameters here in the future
+    });
+
+    midi.on('disconnected', () => {
+      statusEl.classList.remove('connected');
+      statusText.textContent = 'Disconnected';
+    });
+
+    // ── Toolbar Buttons ─────────────────────────────────────────────
+
+    document.getElementById('btn-connect').addEventListener('click', async () => {
+      if (midi.isConnected) {
+        // Already connected — re-sync
+        autoSync();
+      } else {
+        await connect();
+        // Auto-detect path triggers autoSync inside showPortSelector's OK handler
+        if (midi.isConnected) autoSync();
+      }
+    });
+
+    document.getElementById('btn-receive').addEventListener('click', async () => {
+      if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+      try {
+        const data = await midi.requestEditBuffer();
+        const parsed = sysex.decodeSoundDump(data);
+        if (parsed) {
+          editor.loadSound(parsed.data);
+          document.getElementById('patch-name').value = parsed.name;
+          toast(`Received: ${parsed.name}`, 'success');
+        }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    });
+
+    document.getElementById('btn-send').addEventListener('click', () => {
+      editor.sendToEditBuffer();
+    });
+
+    // Write = store to Blofeld's permanent memory
+    document.getElementById('btn-store').addEventListener('click', () => {
+      if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+      const bank = parseInt(document.getElementById('bank-select').value);
+      const program = parseInt(document.getElementById('program-number').value) - 1;
+      const bankName = ['A','B','C','D','E','F','G','H'][bank];
+      const location = `${bankName}${String(program + 1).padStart(3, '0')}`;
+
+      // Confirm before writing to permanent storage
+      if (!confirm(`Write "${editor.getPatchName()}" to ${location}?\n\nThis will overwrite the sound in the Blofeld's memory.`)) return;
+
+      const msg = sysex.encodeSoundDump(midi.deviceId, bank, program, editor.sdata);
+      midi.send(msg);
+      toast(`Written to ${location}`, 'success');
+    });
+
+    // Recall = load a sound from Blofeld's memory
+    document.getElementById('btn-recall').addEventListener('click', async () => {
+      if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+      const bank = parseInt(document.getElementById('bank-select').value);
+      const program = parseInt(document.getElementById('program-number').value) - 1;
+      const bankName = ['A','B','C','D','E','F','G','H'][bank];
+      try {
+        toast(`Requesting ${bankName}${program + 1}...`, 'info', 1500);
+        const data = await midi.requestSound(bank, program);
+        const parsed = sysex.decodeSoundDump(data);
+        if (parsed) {
+          editor.loadSound(parsed.data);
+          document.getElementById('patch-name').value = parsed.name;
+          toast(`Recalled: ${parsed.name} from ${bankName}${program + 1}`, 'success');
+        }
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    });
+
+    document.getElementById('btn-init').addEventListener('click', () => {
+      editor.loadSound(createInitSound());
+      document.getElementById('patch-name').value = 'Init';
+      // Also send init to Blofeld edit buffer so both sides match
+      if (midi.isConnected) editor.sendToEditBuffer();
+      toast('Initialized', 'info');
+    });
+
+    document.getElementById('btn-undo').addEventListener('click', () => editor.undo());
+    document.getElementById('btn-redo').addEventListener('click', () => editor.redo());
+
+    // Patch name sync — update both local data and Blofeld
+    document.getElementById('patch-name').addEventListener('input', (e) => {
+      editor.setPatchName(e.target.value);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z') { e.preventDefault(); editor.undo(); }
+        if (e.key === 'y') { e.preventDefault(); editor.redo(); }
+        if (e.key === 's') { e.preventDefault(); editor.sendToEditBuffer(); }
+      }
+    });
+
+    // ── Generator Panel ─────────────────────────────────────────────
+
+    // ── Wavetable Panel ──────────────────────────────────────────────
+
+    function renderWavetablePanel() {
+      const panel = document.createElement('div');
+      panel.id = 'panel-wt';
+      panel.className = 'panel';
+
+      let currentTable = wt.generateHarmonicSweep();
+      let selectedWave = 0;
+      let selectedSlot = 80;
+
+      // 3D view
+      const viewSection = document.createElement('div');
+      viewSection.className = 'section';
+      const viewTitle = document.createElement('div');
+      viewTitle.className = 'section-title';
+      viewTitle.textContent = 'Wavetable';
+
+      const viewBody = document.createElement('div');
+      viewBody.style.cssText = 'padding: 16px; display: flex; gap: 16px;';
+
+      const canvas3d = document.createElement('canvas');
+      canvas3d.width = 500; canvas3d.height = 200;
+      canvas3d.style.cssText = 'background: var(--bg); border: 1px solid var(--border); border-radius: 4px; flex: 1;';
+
+      const canvasWave = document.createElement('canvas');
+      canvasWave.width = 300; canvasWave.height = 200;
+      canvasWave.style.cssText = 'background: var(--bg); border: 1px solid var(--border); border-radius: 4px; width: 300px;';
+
+      // Wave selector slider
+      const waveSelect = document.createElement('div');
+      waveSelect.style.cssText = 'padding: 0 16px 12px; display: flex; align-items: center; gap: 10px;';
+      const waveLabel = document.createElement('span');
+      waveLabel.style.cssText = 'font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px;';
+      waveLabel.textContent = 'Wave 1 / 64';
+      const waveSlider = document.createElement('input');
+      waveSlider.type = 'range'; waveSlider.min = 0; waveSlider.max = 63; waveSlider.value = 0;
+      waveSlider.style.cssText = 'flex: 1; accent-color: #e8e8e8;';
+      waveSlider.addEventListener('input', () => {
+        selectedWave = parseInt(waveSlider.value);
+        waveLabel.textContent = `Wave ${selectedWave + 1} / 64`;
+        redraw();
+      });
+
+      // Preview button
+      const previewBtn = document.createElement('button');
+      previewBtn.className = 'btn';
+      previewBtn.textContent = 'Preview';
+      let previewing = false;
+      previewBtn.addEventListener('click', () => {
+        if (previewing) { wt.stopPreview(); previewBtn.textContent = 'Preview'; previewing = false; }
+        else { wt.previewWave(currentTable.waves[selectedWave]); previewBtn.textContent = 'Stop'; previewing = true; }
+      });
+
+      waveSelect.append(waveLabel, waveSlider, previewBtn);
+      viewBody.append(canvas3d, canvasWave);
+      viewSection.append(viewTitle, viewBody, waveSelect);
+      panel.appendChild(viewSection);
+
+      // Drawing canvas for editing
+      const drawSection = document.createElement('div');
+      drawSection.className = 'section';
+      const drawTitle = document.createElement('div');
+      drawTitle.className = 'section-title';
+      drawTitle.textContent = 'Draw / Edit';
+
+      const drawBody = document.createElement('div');
+      drawBody.style.cssText = 'padding: 16px;';
+
+      const drawCanvas = document.createElement('canvas');
+      drawCanvas.width = 800; drawCanvas.height = 160;
+      drawCanvas.style.cssText = 'background: var(--bg); border: 1px solid var(--border); border-radius: 4px; width: 100%; cursor: crosshair;';
+
+      // Mouse drawing
+      let drawing = false;
+      function drawAt(e) {
+        const rect = drawCanvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        const idx = Math.floor(x * 128);
+        const val = 1 - y * 2; // -1 to 1
+        if (idx >= 0 && idx < 128) {
+          currentTable.waves[selectedWave][idx] = Math.max(-1, Math.min(1, val));
+          redraw();
+        }
+      }
+      drawCanvas.addEventListener('mousedown', (e) => { drawing = true; drawAt(e); });
+      drawCanvas.addEventListener('mousemove', (e) => { if (drawing) drawAt(e); });
+      document.addEventListener('mouseup', () => { drawing = false; });
+
+      drawBody.appendChild(drawCanvas);
+      drawSection.append(drawTitle, drawBody);
+      panel.appendChild(drawSection);
+
+      // Presets & Import
+      const actSection = document.createElement('div');
+      actSection.className = 'section';
+      const actTitle = document.createElement('div');
+      actTitle.className = 'section-title';
+      actTitle.textContent = 'Create';
+
+      const actBody = document.createElement('div');
+      actBody.className = 'gen-wrap';
+      actBody.style.padding = '16px 20px';
+
+      // Preset buttons
+      for (const preset of wt.TABLE_PRESETS) {
+        const btn = document.createElement('button');
+        btn.className = 'gen-cat-btn';
+        btn.textContent = preset.name;
+        btn.addEventListener('click', () => {
+          currentTable = preset.fn();
+          selectedWave = 0;
+          waveSlider.value = 0;
+          waveLabel.textContent = 'Wave 1 / 64';
+          redraw();
+        });
+        actBody.appendChild(btn);
+      }
+
+      // Import button
+      const importBtn = document.createElement('button');
+      importBtn.className = 'gen-cat-btn';
+      importBtn.textContent = 'Import .wav';
+      importBtn.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = '.wav,.WAV';
+        input.addEventListener('change', async () => {
+          if (!input.files.length) return;
+          const buf = await input.files[0].arrayBuffer();
+          currentTable = await wt.importFromAudio(buf);
+          currentTable.name = input.files[0].name.replace(/\.wav$/i, '').substring(0, 14);
+          selectedWave = 0; waveSlider.value = 0;
+          redraw();
+          toast(`Imported: ${currentTable.name}`, 'success', 1500);
+        });
+        input.click();
+      });
+      actBody.appendChild(importBtn);
+
+      // Divider
+      const div = document.createElement('div');
+      div.className = 'gen-divider';
+      actBody.appendChild(div);
+
+      // Upload to Blofeld
+      const slotSelect = document.createElement('select');
+      slotSelect.style.cssText = 'background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; color: var(--text); padding: 4px; font-size: 11px;';
+      for (let s = 80; s <= 118; s++) {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = `Slot ${s}`;
+        slotSelect.appendChild(opt);
+      }
+      slotSelect.addEventListener('change', () => { selectedSlot = parseInt(slotSelect.value); });
+
+      const uploadBtn = document.createElement('button');
+      uploadBtn.className = 'gen-cat-btn';
+      uploadBtn.textContent = 'Upload to Blofeld';
+      uploadBtn.addEventListener('click', async () => {
+        if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+        uploadBtn.textContent = 'Uploading...';
+        uploadBtn.disabled = true;
+        try {
+          await wt.uploadTable(midi, selectedSlot, currentTable, (done, total) => {
+            uploadBtn.textContent = `${done}/${total}`;
+          });
+          toast(`Uploaded to slot ${selectedSlot}`, 'success');
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+        uploadBtn.textContent = 'Upload to Blofeld';
+        uploadBtn.disabled = false;
+      });
+
+      actBody.append(slotSelect, uploadBtn);
+      actSection.append(actTitle, actBody);
+      panel.appendChild(actSection);
+
+      document.getElementById('editor').appendChild(panel);
+
+      function redraw() {
+        wt.draw3DTable(canvas3d, currentTable);
+        wt.drawWaveOnCanvas(canvasWave, currentTable.waves[selectedWave]);
+        wt.drawWaveOnCanvas(drawCanvas, currentTable.waves[selectedWave]);
+      }
+      redraw();
+    }
+
+    function renderGeneratorPanel() {
+      const panel = document.createElement('div');
+      panel.id = 'panel-gen';
+      panel.className = 'panel';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'gen-wrap';
+
+      // Category buttons
+      for (const cat of getCategories()) {
+        const btn = document.createElement('button');
+        btn.className = 'gen-cat-btn';
+        btn.textContent = cat;
+        btn.addEventListener('click', () => {
+          const { data, name } = generate(cat);
+          editor.loadSound(data);
+          document.getElementById('patch-name').value = name;
+          if (midi.isConnected) editor.sendToEditBuffer();
+        });
+        wrap.appendChild(btn);
+      }
+
+      // Divider
+      const div = document.createElement('div');
+      div.className = 'gen-divider';
+      wrap.appendChild(div);
+
+      // Random
+      const randBtn = document.createElement('button');
+      randBtn.className = 'gen-cat-btn secondary';
+      randBtn.textContent = 'Random';
+      randBtn.addEventListener('click', () => {
+        const { data, name } = generateRandom();
+        editor.loadSound(data);
+        document.getElementById('patch-name').value = name;
+        if (midi.isConnected) editor.sendToEditBuffer();
+      });
+      wrap.appendChild(randBtn);
+
+      // Mutate
+      const mutBtn = document.createElement('button');
+      mutBtn.className = 'gen-cat-btn secondary';
+      mutBtn.textContent = 'Mutate';
+      mutBtn.addEventListener('click', () => {
+        const { data, name } = mutate(editor.sdata, 0.12);
+        editor.loadSound(data);
+        document.getElementById('patch-name').value = name;
+        if (midi.isConnected) editor.sendToEditBuffer();
+      });
+      wrap.appendChild(mutBtn);
+
+      // Save
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'gen-cat-btn save';
+      saveBtn.textContent = 'Save';
+      saveBtn.addEventListener('click', () => {
+        librarian.add(editor.sdata, { source: 'generator' });
+        toast('Saved', 'success', 1500);
+        updateLibraryView();
+      });
+      wrap.appendChild(saveBtn);
+
+      panel.appendChild(wrap);
+      document.getElementById('editor').appendChild(panel);
+    }
+
+    // ── Library Panel ───────────────────────────────────────────────
+
+    function renderLibraryPanel() {
+      const panel = document.createElement('div');
+      panel.id = 'panel-lib';
+      panel.className = 'panel';
+
+      // Toolbar
+      const toolbar = document.createElement('div');
+      toolbar.className = 'library-toolbar';
+
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.className = 'library-search';
+      searchInput.placeholder = 'Search presets...';
+      searchInput.addEventListener('input', () => updateLibraryView(searchInput.value));
+
+      const importBtn = document.createElement('button');
+      importBtn.className = 'btn';
+      importBtn.textContent = 'Import .syx';
+      importBtn.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.syx,.SYX';
+        input.multiple = true;
+        input.addEventListener('change', async () => {
+          const count = await librarian.importFromFileInput(input);
+          toast(`Imported ${count} preset${count !== 1 ? 's' : ''}`, 'success');
+          updateLibraryView();
+        });
+        input.click();
+      });
+
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'btn';
+      exportBtn.textContent = 'Export All';
+      exportBtn.addEventListener('click', () => {
+        if (librarian.presets.length === 0) { toast('Library is empty', 'error'); return; }
+        const data = librarian.exportAll();
+        librarian.download(data, 'blofeld-library.syx');
+        toast('Exported library', 'success');
+      });
+
+      const saveCurrentBtn = document.createElement('button');
+      saveCurrentBtn.className = 'btn btn-primary';
+      saveCurrentBtn.textContent = 'Save Current';
+      saveCurrentBtn.addEventListener('click', () => {
+        librarian.add(editor.sdata, { source: 'editor' });
+        toast('Saved to library', 'success');
+        updateLibraryView();
+      });
+
+      const statsSpan = document.createElement('span');
+      statsSpan.style.cssText = 'font-size:11px;color:var(--text-dim);margin-left:auto';
+      statsSpan.id = 'lib-stats';
+
+      // Receive from Blofeld — save current edit buffer to library
+      const receiveBtn = document.createElement('button');
+      receiveBtn.className = 'btn';
+      receiveBtn.textContent = 'Receive from Blofeld';
+      receiveBtn.addEventListener('click', async () => {
+        if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+        try {
+          receiveBtn.textContent = 'Receiving...';
+          const dump = await midi.requestEditBuffer(5000);
+          const parsed = sysex.decodeSoundDump(dump);
+          if (parsed) {
+            editor.loadSound(parsed.data);
+            document.getElementById('patch-name').value = parsed.name;
+            librarian.add(parsed.data, { source: 'Blofeld' });
+            toast(`Saved: ${parsed.name}`, 'success');
+            updateLibraryView();
+          }
+        } catch (e) {
+          toast('Receive failed', 'error');
+        }
+        receiveBtn.textContent = 'Receive from Blofeld';
+      });
+
+      // Receive full bank from Blofeld
+      const receiveBankBtn = document.createElement('button');
+      receiveBankBtn.className = 'btn';
+      receiveBankBtn.textContent = 'Receive Bank';
+      receiveBankBtn.addEventListener('click', async () => {
+        if (!midi.isConnected) { toast('Not connected', 'error'); return; }
+        const bank = parseInt(document.getElementById('bank-select').value);
+        const bankName = ['A','B','C','D','E','F','G','H'][bank];
+        receiveBankBtn.textContent = `Bank ${bankName}...`;
+        receiveBankBtn.disabled = true;
+        let count = 0;
+        for (let prog = 0; prog < 128; prog++) {
+          try {
+            receiveBankBtn.textContent = `${bankName} ${prog+1}/128`;
+            const dump = await midi.requestSound(bank, prog, 5000);
+            const parsed = sysex.decodeSoundDump(dump);
+            if (parsed) {
+              librarian.add(parsed.data, { bank, program: prog, source: `Bank ${bankName}` });
+              count++;
+            }
+          } catch (e) { break; }
+        }
+        toast(`Received ${count} presets from Bank ${bankName}`, 'success');
+        updateLibraryView();
+        receiveBankBtn.textContent = 'Receive Bank';
+        receiveBankBtn.disabled = false;
+      });
+
+      toolbar.append(searchInput, receiveBtn, receiveBankBtn, importBtn, exportBtn, saveCurrentBtn, statsSpan);
+
+      // Category filter
+      const catBar = document.createElement('div');
+      catBar.style.cssText = 'display:flex;gap:4px;padding:8px 12px;flex-wrap:wrap';
+
+      const allTag = document.createElement('span');
+      allTag.className = 'tag active';
+      allTag.textContent = 'All';
+      allTag.dataset.cat = '-1';
+      allTag.addEventListener('click', () => {
+        catBar.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+        allTag.classList.add('active');
+        updateLibraryView();
+      });
+      catBar.appendChild(allTag);
+
+      for (let i = 0; i < CATEGORIES.length; i++) {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = CATEGORIES[i];
+        tag.dataset.cat = i;
+        tag.addEventListener('click', () => {
+          catBar.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+          tag.classList.add('active');
+          updateLibraryView('', i);
+        });
+        catBar.appendChild(tag);
+      }
+
+      // Preset list
+      libraryListEl = document.createElement('div');
+      libraryListEl.className = 'library-grid';
+
+      panel.append(toolbar, catBar, libraryListEl);
+      document.getElementById('editor').appendChild(panel);
+
+      updateLibraryView();
+
+      // Auto-load bundled presets on first run
+      if (librarian.presets.length === 0) {
+        fetch('presets.json').then(r => r.json()).then(presets => {
+          for (const p of presets) {
+            const data = new Uint8Array(p.data);
+            librarian.add(data, { source: p.source });
+          }
+          toast(`Loaded ${presets.length} bundled presets`, 'info', 2000);
+          updateLibraryView();
+        }).catch(() => {});
+      }
+    }
+
+    function updateLibraryView(query = '', categoryFilter = -1) {
+      let presets = categoryFilter >= 0
+        ? librarian.filterByCategory(categoryFilter)
+        : query
+          ? librarian.search(query)
+          : librarian.getAll();
+
+      libraryListEl.innerHTML = '';
+
+      for (const preset of presets) {
+        const item = document.createElement('div');
+        item.className = 'library-item';
+        item.innerHTML = `
+          <span class="name">${preset.name}</span>
+          <span class="category">${preset.categoryName}</span>
+          <span class="bank-prog">${preset.source}</span>
+        `;
+
+        item.addEventListener('click', () => {
+          editor.loadSound(preset.data);
+          document.getElementById('patch-name').value = preset.name;
+          if (midi.isConnected) editor.sendToEditBuffer();
+          toast(`Loaded: ${preset.name}`, 'info');
+        });
+
+        item.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          if (confirm(`Delete "${preset.name}"?`)) {
+            librarian.remove(preset.id);
+            updateLibraryView();
+          }
+        });
+
+        libraryListEl.appendChild(item);
+      }
+
+      // Stats
+      const stats = librarian.getStats();
+      const statsEl = document.getElementById('lib-stats');
+      if (statsEl) statsEl.textContent = `${stats.total} presets`;
+    }
+  </script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
