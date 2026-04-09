@@ -33,12 +33,12 @@
   background-image: url('/photos/silhouette-synths.webp');
   background-size: cover;
   background-position: center;
-  filter: grayscale(1) brightness(0.08);
+  filter: grayscale(1) brightness(0.13);
   pointer-events: none;
   z-index: 0;
 }
 
-/* ── Ghost photos (cycling during playback) ── */
+/* ── Ghost photos ── */
 
 .ghost {
   position: fixed;
@@ -46,15 +46,58 @@
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transition: opacity 3s ease-in-out;
+  transition: opacity 4s ease-in-out;
   pointer-events: none;
   z-index: 0;
-  filter: grayscale(1) brightness(0.15);
+  filter: grayscale(1) brightness(0.1);
   mix-blend-mode: screen;
 }
 
 .ghostVisible {
+  opacity: 0.15;
+}
+
+.ghostPlaying.ghostVisible {
   opacity: 0.3;
+  filter: grayscale(1) brightness(0.15);
+}
+
+/* ── Staggered entrance ── */
+
+.title {
+  opacity: 0;
+  animation: staggerIn 1.2s ease-out 0.2s forwards;
+}
+
+.stagger2 {
+  opacity: 0;
+  animation: staggerIn 1.2s ease-out 0.5s forwards;
+}
+
+.stagger3 {
+  opacity: 0;
+  animation: staggerIn 1.2s ease-out 0.9s forwards;
+}
+
+.stagger4 {
+  opacity: 0;
+  animation: staggerIn 1.2s ease-out 1.1s forwards;
+}
+
+.stagger5 {
+  opacity: 0;
+  animation: staggerIn 1.2s ease-out 1.3s forwards;
+}
+
+@keyframes staggerIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Content area ── */
@@ -73,7 +116,7 @@
 .title {
   color: var(--fg);
   font-size: 1.8rem;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: 0.2em;
   text-transform: lowercase;
   margin: 0;
@@ -81,7 +124,7 @@
 }
 
 .titleGlow {
-  text-shadow: 0 0 40px rgba(196, 163, 90, 0.06);
+  text-shadow: 0 0 40px rgba(196, 163, 90, 0.08);
 }
 
 .subtitle {
@@ -90,7 +133,33 @@
   font-weight: 300;
   letter-spacing: 0.12em;
   margin: 0;
-  margin-top: 1rem;
+  margin-top: 0.8rem;
+}
+
+/* ── Now playing indicator ── */
+
+.nowPlaying {
+  color: var(--accent);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  margin: 0;
+  margin-top: 1.5rem;
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.7; }
+}
+
+/* ── Player row (volume + play + time) ── */
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
 }
 
 /* ── Play button ── */
@@ -99,30 +168,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: 1px solid var(--fg-muted);
   background: transparent;
   color: var(--fg-dim);
   font-size: 1rem;
   cursor: pointer;
-  margin-top: 2.5rem;
-  transition: border-color 0.4s, color 0.4s;
+  transition: border-color 0.4s, color 0.4s, box-shadow 0.4s;
   position: relative;
+  flex-shrink: 0;
+  animation: idlePulse 4s ease-in-out infinite;
 }
 
 .playBtn:hover {
   border-color: var(--fg-dim);
   color: var(--fg);
+  animation: none;
 }
 
 .playBtnPlaying {
   border-color: var(--accent);
+  animation: none;
+  box-shadow: 0 0 20px rgba(196, 163, 90, 0.06);
 }
 
 .playBtnLoading {
   animation: loadingPulse 2s ease-in-out infinite;
+}
+
+@keyframes idlePulse {
+  0%, 100% { border-color: var(--fg-muted); }
+  50%      { border-color: rgba(138, 133, 126, 0.5); }
 }
 
 /* Play icon (CSS triangle) */
@@ -131,7 +209,7 @@
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 8px 0 8px 14px;
+  border-width: 7px 0 7px 12px;
   border-color: transparent transparent transparent var(--fg-dim);
   margin-left: 3px;
   transition: border-color 0.4s;
@@ -149,72 +227,46 @@
 
 .pauseBar {
   width: 3px;
-  height: 16px;
+  height: 14px;
   background: var(--accent);
   border-radius: 1px;
 }
 
-/* ── Track indicators ── */
+/* ── Time display ── */
 
-.tracks {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 2rem;
-}
-
-.trackNum {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--fg-muted);
+.timeDisplay {
+  color: var(--fg-dim);
   font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: color 0.3s;
-  user-select: none;
-  -webkit-user-select: none;
+  letter-spacing: 0.08em;
+  width: 80px;
+  text-align: left;
 }
 
-.trackNum:hover {
-  color: var(--fg);
+.timePlaceholder {
+  opacity: 0.3;
 }
 
-.trackNumActive {
-  color: var(--accent);
-}
-
-.trackDuration {
-  font-size: 0.55rem;
-  letter-spacing: 0.05em;
-  opacity: 0.6;
-}
-
-/* ── Volume ── */
-
-.controls {
-  display: flex;
-  align-items: center;
-  margin-top: 2rem;
-}
+/* ── Volume (in player row) ── */
 
 .volumeWrap {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 80px;
+  justify-content: flex-end;
 }
 
 .volumeLabel {
   color: var(--fg-muted);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   letter-spacing: 0.1em;
 }
 
 .volumeSlider {
   -webkit-appearance: none;
   appearance: none;
-  width: 80px;
-  height: 2px;
+  width: 50px;
+  height: 1px;
   background: var(--fg-muted);
   border-radius: 1px;
   outline: none;
@@ -245,20 +297,114 @@
   cursor: pointer;
 }
 
-/* ── Note text ── */
+/* ── Progress bar — always visible ── */
+
+.progressWrap {
+  width: 240px;
+  height: 1px;
+  background: rgba(90, 85, 80, 0.2);
+  border-radius: 1px;
+  margin-top: 1.2rem;
+  position: relative;
+  transition: height 0.3s, background 0.3s;
+}
+
+.progressActive {
+  height: 2px;
+  background: rgba(90, 85, 80, 0.3);
+  cursor: pointer;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.3s linear;
+  opacity: 0.6;
+}
+
+.progressActive:hover {
+  height: 4px;
+}
+
+.progressActive:hover .progressBar {
+  opacity: 1;
+}
+
+/* Progress hover thumb */
+.progressActive::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: var(--progress, 0%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.progressActive:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ── Track indicators ── */
+
+.tracks {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.trackNum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.3s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.trackNum:hover {
+  color: var(--fg);
+}
+
+.trackNumActive {
+  color: var(--accent);
+}
+
+.trackDuration {
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  opacity: 0.5;
+}
+
+.trackNum:hover .trackDuration {
+  opacity: 0.8;
+}
+
+/* ── Note text — bottom-left on desktop ── */
 
 .note {
   color: var(--fg-dim);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
-  line-height: 1.8;
-  text-align: center;
-  margin-top: 4rem;
-  max-width: 360px;
-  position: relative;
+  line-height: 2;
+  text-align: left;
+  max-width: 380px;
+  position: fixed;
+  bottom: 2rem;
+  left: 2.5rem;
   z-index: 1;
   opacity: 0;
-  animation: fadeInNote 1s ease-in 2.5s forwards;
+  animation: fadeInNote 2s ease-in 2.5s forwards;
 }
 
 /* ── Back link ── */
@@ -300,8 +446,8 @@
 }
 
 @keyframes fadeInNote {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Mobile ── */
@@ -315,10 +461,14 @@
     font-size: 1.3rem;
   }
 
+  .playerRow {
+    gap: 1rem;
+    margin-top: 1.2rem;
+  }
+
   .playBtn {
     width: 48px;
     height: 48px;
-    margin-top: 2rem;
   }
 
   .playIcon {
@@ -333,18 +483,23 @@
 
   .tracks {
     gap: 1rem;
-    margin-top: 1.5rem;
-  }
-
-  .controls {
-    margin-top: 1.5rem;
+    margin-top: 1.2rem;
   }
 
   .volumeSlider {
-    width: 60px;
+    width: 40px;
   }
 
+  .progressWrap {
+    width: 200px;
+  }
+
+  /* Note returns to centered below content on mobile */
   .note {
-    margin-top: 2rem;
+    position: relative;
+    bottom: auto;
+    left: auto;
+    text-align: center;
+    margin-top: 2.5rem;
   }
 }

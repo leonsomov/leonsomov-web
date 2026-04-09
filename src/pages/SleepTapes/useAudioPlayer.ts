@@ -16,6 +16,8 @@ interface PlayerState {
   mode: Mode
   volume: number
   loading: boolean
+  currentTime: number
+  duration: number
 }
 
 export function useAudioPlayer() {
@@ -25,6 +27,8 @@ export function useAudioPlayer() {
     mode: 'all',
     volume: 0.8,
     loading: false,
+    currentTime: 0,
+    duration: 0,
   })
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -37,7 +41,17 @@ export function useAudioPlayer() {
     audio.volume = 0.8
     audioRef.current = audio
 
+    const onTimeUpdate = () => {
+      setState((prev) => ({
+        ...prev,
+        currentTime: audio.currentTime,
+        duration: audio.duration || 0,
+      }))
+    }
+    audio.addEventListener('timeupdate', onTimeUpdate)
+
     return () => {
+      audio.removeEventListener('timeupdate', onTimeUpdate)
       audio.pause()
       audio.src = ''
     }
@@ -134,5 +148,11 @@ export function useAudioPlayer() {
     setState((prev) => ({ ...prev, volume: v }))
   }, [])
 
-  return { ...state, playTrack, playAll, toggle, setVolume }
+  const seek = useCallback((time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time
+    }
+  }, [])
+
+  return { ...state, playTrack, playAll, toggle, setVolume, seek }
 }

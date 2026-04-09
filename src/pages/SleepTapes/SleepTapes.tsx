@@ -18,20 +18,21 @@ const TRACKS_INFO = [
   { numeral: 'V', duration: '6:15' },
 ]
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
+
 export function SleepTapes() {
-  const { currentTrack, isPlaying, loading, volume, playTrack, playAll, toggle, setVolume } =
+  const { currentTrack, isPlaying, loading, volume, currentTime, duration, playTrack, playAll, toggle, setVolume, seek } =
     useAudioPlayer()
 
   const [photo, setPhoto] = useState<string | null>(null)
   const [photoVisible, setPhotoVisible] = useState(false)
 
-  // Ghost photos that fade in/out while playing
+  // Ghost photos — cycle slowly when idle, faster when playing
   useEffect(() => {
-    if (!isPlaying) {
-      setPhotoVisible(false)
-      return
-    }
-
     let mounted = true
 
     const showPhoto = () => {
@@ -40,18 +41,18 @@ export function SleepTapes() {
       setPhoto(src)
       setPhotoVisible(true)
 
-      const hideDelay = 4000 + Math.random() * 2000
+      const hideDelay = isPlaying ? 4000 + Math.random() * 2000 : 6000 + Math.random() * 3000
       setTimeout(() => {
         if (!mounted) return
         setPhotoVisible(false)
       }, hideDelay)
     }
 
-    const firstTimeout = setTimeout(showPhoto, 3000)
+    const firstDelay = isPlaying ? 3000 : 5000
+    const firstTimeout = setTimeout(showPhoto, firstDelay)
 
-    const interval = setInterval(() => {
-      showPhoto()
-    }, 10000 + Math.random() * 8000)
+    const loopDelay = isPlaying ? 10000 + Math.random() * 8000 : 18000 + Math.random() * 10000
+    const interval = setInterval(showPhoto, loopDelay)
 
     return () => {
       mounted = false
@@ -69,6 +70,8 @@ export function SleepTapes() {
     }
   }
 
+  const progress = duration > 0 ? currentTime / duration : 0
+
   return (
     <div className={styles.page}>
       {/* Background layers */}
@@ -77,7 +80,7 @@ export function SleepTapes() {
 
       {photo && (
         <div
-          className={`${styles.ghost} ${photoVisible ? styles.ghostVisible : ''}`}
+          className={`${styles.ghost} ${photoVisible ? styles.ghostVisible : ''} ${isPlaying ? styles.ghostPlaying : ''}`}
           style={{ backgroundImage: `url(${photo})` }}
         />
       )}
@@ -87,24 +90,70 @@ export function SleepTapes() {
         <h1 className={`${styles.title} ${isPlaying ? styles.titleGlow : ''}`}>
           Sleep Tapes
         </h1>
-        <p className={styles.subtitle}>vol. 1 — mediterranean coast</p>
+        <p className={`${styles.subtitle} ${styles.stagger2}`}>vol. 1 — mediterranean coast</p>
 
-        <button
-          className={`${styles.playBtn} ${isPlaying ? styles.playBtnPlaying : ''} ${loading ? styles.playBtnLoading : ''}`}
-          onClick={handlePlay}
-          aria-label={isPlaying ? 'Pause' : 'Play'}
+        {/* Now playing indicator */}
+        {currentTrack !== null && (
+          <p className={styles.nowPlaying}>
+            {TRACKS_INFO[currentTrack].numeral}
+          </p>
+        )}
+
+        {/* Play button + volume row */}
+        <div className={`${styles.playerRow} ${styles.stagger3}`}>
+          <label className={styles.volumeWrap}>
+            <span className={styles.volumeLabel}>vol</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className={styles.volumeSlider}
+            />
+          </label>
+
+          <button
+            className={`${styles.playBtn} ${isPlaying ? styles.playBtnPlaying : ''} ${loading ? styles.playBtnLoading : ''}`}
+            onClick={handlePlay}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? (
+              <span className={styles.pauseIcon}>
+                <span className={styles.pauseBar} />
+                <span className={styles.pauseBar} />
+              </span>
+            ) : (
+              <span className={styles.playIcon} />
+            )}
+          </button>
+
+          <div className={styles.timeDisplay}>
+            {currentTrack !== null && duration > 0 ? (
+              <span>{formatTime(currentTime)}</span>
+            ) : (
+              <span className={styles.timePlaceholder}>35:33</span>
+            )}
+          </div>
+        </div>
+
+        {/* Progress bar — always visible */}
+        <div
+          className={`${styles.progressWrap} ${styles.stagger4} ${currentTrack !== null ? styles.progressActive : ''}`}
+          style={{ '--progress': `${progress * 100}%` } as React.CSSProperties}
+          onClick={(e) => {
+            if (currentTrack === null) return
+            const rect = e.currentTarget.getBoundingClientRect()
+            const pct = (e.clientX - rect.left) / rect.width
+            seek(pct * duration)
+          }}
         >
-          {isPlaying ? (
-            <span className={styles.pauseIcon}>
-              <span className={styles.pauseBar} />
-              <span className={styles.pauseBar} />
-            </span>
-          ) : (
-            <span className={styles.playIcon} />
-          )}
-        </button>
+          <div className={styles.progressBar} style={{ width: `${progress * 100}%` }} />
+        </div>
 
-        <div className={styles.tracks}>
+        {/* Track indicators */}
+        <div className={`${styles.tracks} ${styles.stagger5}`}>
           {TRACKS_INFO.map((track, i) => (
             <span
               key={i}
@@ -118,29 +167,13 @@ export function SleepTapes() {
         </div>
       </div>
 
-      {/* Note */}
+      {/* Note — positioned bottom-left on desktop */}
       <p className={styles.note}>
         five pieces, thirty-five minutes,<br />
         recorded on the coast of the Balearic Sea,<br />
         along the shore from Valencia to silence.<br />
         for the spaces between waking and sleep.
       </p>
-
-      {/* Volume */}
-      <div className={styles.controls}>
-        <label className={styles.volumeWrap}>
-          <span className={styles.volumeLabel}>vol</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={volume}
-            onChange={(e) => setVolume(parseFloat(e.target.value))}
-            className={styles.volumeSlider}
-          />
-        </label>
-      </div>
 
       {/* Back */}
       <a href="/" className={styles.backLink} aria-label="Back to Leon Somov">
