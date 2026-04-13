@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
-  <rect width="180" height="180" rx="36" fill="#f4efe1"/>
-  <text x="90" y="130" text-anchor="middle"
-        font-family="Georgia, 'Times New Roman', serif"
-        font-size="130" font-style="italic" font-weight="400"
-        fill="#9c3b18">D</text>
+  <rect width="180" height="180" rx="36" fill="#0a0a0a"/>
+  <text x="90" y="122" text-anchor="middle"
+        font-family="'JetBrains Mono', 'SF Mono', monospace"
+        font-size="96" font-weight="500"
+        fill="#c4a35a" letter-spacing="6">D</text>
 </svg>
