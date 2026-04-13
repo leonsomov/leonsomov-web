@@ -1436,7 +1436,6 @@ async function loadAll(fresh = false) {
   state.items = [];
   $("#feed").innerHTML = '<div class="loading">Fetching…</div>';
   $("#hero").style.display = "none";
-  $("#river-rule").style.display = "none";
   const collected = [];
   let ok = 0, fail = 0;
   const results = await runLimited(SOURCES, fetchWithRetry, 5);
