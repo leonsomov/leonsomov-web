@@ -1455,7 +1455,15 @@ async function loadAll(fresh = false) {
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   $("#status").textContent = `${ok} feeds · ${state.items.length} stories${fail ? ` · ${fail} failed` : ""} · ${now}`;
   if (!state.items.length) {
-    $("#feed").innerHTML = '<div class="loading">All feeds failed. Check that the local server is running.</div>';
+    const firstErr = results.find(r => r && !r.ok);
+    const errMsg = firstErr && firstErr.error ? String(firstErr.error).slice(0, 140) : "unknown";
+    $("#feed").innerHTML = `
+      <div class="loading" style="max-width: 520px; margin: 0 auto; text-align: left; line-height: 1.6;">
+        <strong style="color: var(--ink); font-style: normal;">Feeds could not load.</strong><br><br>
+        Most likely cause on Brave: <strong>Shields is blocking api.rss2json.com</strong>.
+        Click the Brave lion icon in the address bar and turn Shields <em>down</em> for this site, then hard reload (⌘⇧R).<br><br>
+        <span style="color: var(--dim); font-size: 11px;">First error: ${errMsg}</span>
+      </div>`;
   }
 }
 
