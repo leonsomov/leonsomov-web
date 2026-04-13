@@ -1,0 +1,23 @@
+{
+  "name": "Daily",
+  "short_name": "Daily",
+  "description": "Quiet morning reading ritual — calm news, Drikung Kagyu quotes, electronic music, science.",
+  "start_url": "/daily/",
+  "scope": "/daily/",
+  "display": "standalone",
+  "background_color": "#f4efe1",
+  "theme_color": "#f4efe1",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/daily/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/daily/icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
