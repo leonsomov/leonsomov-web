@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Daily — network debug</title>
+<style>
+  body { font-family: -apple-system, Helvetica, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 24px; background: #f4efe1; color: #1f1a14; }
+  h1 { font-size: 20px; margin: 0 0 20px; }
+  .row { padding: 14px 0; border-bottom: 1px solid #e2dcc8; font-size: 13px; line-height: 1.5; }
+  .row.ok { color: #1e6b3a; }
+  .row.fail { color: #9c3b18; }
+  .row b { font-weight: 600; }
+  .row code { background: #faf6e9; padding: 2px 5px; font-family: "SF Mono", monospace; font-size: 11px; word-break: break-all; }
+  .summary { padding: 16px; background: #faf6e9; border: 1px solid #e2dcc8; margin: 20px 0; }
+</style>
+</head>
+<body>
+<h1>Daily — network debug</h1>
+<div class="summary" id="summary">Running tests…</div>
+<div id="out"></div>
+
+<script>
+const out = document.getElementById("out");
+const summary = document.getElementById("summary");
+const results = [];
+
+function log(label, ok, detail) {
+  results.push({ label, ok, detail });
+  const d = document.createElement("div");
+  d.className = "row " + (ok ? "ok" : "fail");
+  d.innerHTML = `<b>${ok ? "✓" : "✗"} ${label}</b><br>${detail}`;
+  out.appendChild(d);
+}
+
+async function tryFetch(label, url) {
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 12000);
+    const res = await fetch(url, { signal: ctl.signal });
+    clearTimeout(t);
+    const body = await res.text();
+    log(label, res.ok, `HTTP ${res.status} · ${body.length} bytes · <code>${url}</code>`);
+    return res.ok;
+  } catch (e) {
+    log(label, false, `ERROR: ${e.name}: ${e.message} · <code>${url}</code>`);
+    return false;
+  }
+}
+
+(async () => {
+  await tryFetch("rss2json (positive.news)",
+    "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.positive.news%2Ffeed%2F");
+
+  await tryFetch("rss2json (lionsroar)",
+    "https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.lionsroar.com%2Ffeed%2F");
+
+  await tryFetch("codetabs proxy",
+    "https://api.codetabs.com/v1/proxy/?quest=https%3A%2F%2Fwww.positive.news%2Ffeed%2F");
+
+  await tryFetch("allorigins proxy",
+    "https://api.allorigins.win/raw?url=https%3A%2F%2Fwww.positive.news%2Ffeed%2F");
+
+  await tryFetch("direct feed (will fail CORS — expected)",
+    "https://www.positive.news/feed/");
+
+  const passed = results.filter(r => r.ok).length;
+  summary.innerHTML = `<b>${passed}/${results.length} passed.</b> ` +
+    (passed === 0
+      ? "All requests failed — Brave Shields is almost certainly blocking. Lion icon → Shields down → reload."
+      : passed >= 2
+        ? "rss2json and/or a proxy works — the main app should also work. Try a hard reload (⌘⇧R)."
+        : "Partial success. Share this page with me to see which path is blocked.");
+})();
+</script>
+</body>
+</html>
