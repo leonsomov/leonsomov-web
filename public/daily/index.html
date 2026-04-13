@@ -601,9 +601,8 @@
     .masthead-left h1 { font-size: 28px; }
     .masthead-left .meta { font-size: 11px; }
     .quote { margin-bottom: 60px; }
-    .quote-text { font-size: 22px; }
-    .quote-text::first-letter { font-size: 6.5em; }
-    .quote-text-lt { font-size: 14px; }
+    .quote-text { font-size: 19px; }
+    .quote-text-lt { font-size: 13.5px; }
     .tabs { margin-bottom: 44px; overflow-x: auto; flex-wrap: nowrap; }
     .tab { margin-right: 24px; white-space: nowrap; padding: 12px 0; font-size: 12px; }
     .featured { margin-bottom: 56px; }
@@ -1280,7 +1279,6 @@ function renderQuote() {
   const dayNum = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   const base = ((dayNum * 2654435761) >>> 0) % QUOTES_CACHE.length;
   const q = QUOTES_CACHE[(base + state.quoteOffset) % QUOTES_CACHE.length];
-  // Leave raw text so ::first-letter can pick up the real first letter as the drop cap
   $("#quote-text").textContent = q.text;
   $("#quote-text-lt").textContent = q.text_lt || "";
   $("#quote-text-lt").style.display = q.text_lt ? "block" : "none";
