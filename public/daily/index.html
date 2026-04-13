@@ -626,11 +626,27 @@ function dedupKey(title) {
 }
 
 // --- fetching ---
+// Public CORS proxies with fallback (GitHub Pages has no server).
+// If one is down we try the next. Slower and flakier than an owned Worker,
+// but zero infrastructure — works anywhere as static HTML.
+const CORS_PROXIES = [
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://corsproxy.io/?" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
+];
+
 async function fetchFeed(source, fresh = false) {
-  const q = "/daily/fetch?url=" + encodeURIComponent(source.url) + (fresh ? "&fresh=1" : "");
-  const res = await fetch(q, { cache: fresh ? "no-store" : "default" });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  return res.text();
+  let lastErr;
+  for (const makeUrl of CORS_PROXIES) {
+    try {
+      const res = await fetch(makeUrl(source.url), { cache: fresh ? "no-store" : "default" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      if (!text || text.length < 50) throw new Error("empty body");
+      return text;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("all proxies failed");
 }
 
 function extractImage(it, descText) {
