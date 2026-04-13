@@ -1415,6 +1415,22 @@ async function fetchWithRetry(source) {
   }
 }
 
+// Concurrency-limited runner — 5 parallel so rss2json's 10/10s limit isn't tripped.
+async function runLimited(items, worker, concurrency = 5) {
+  const results = new Array(items.length);
+  let idx = 0;
+  async function next() {
+    while (idx < items.length) {
+      const i = idx++;
+      try { results[i] = { ok: true, value: await worker(items[i]) }; }
+      catch (e) { results[i] = { ok: false, error: e, item: items[i] }; }
+    }
+  }
+  const workers = Array(Math.min(concurrency, items.length)).fill(0).map(next);
+  await Promise.all(workers);
+  return results;
+}
+
 async function loadAll(fresh = false) {
   $("#status").textContent = "Fetching " + SOURCES.length + " feeds…";
   state.items = [];
@@ -1423,16 +1439,16 @@ async function loadAll(fresh = false) {
   $("#river-rule").style.display = "none";
   const collected = [];
   let ok = 0, fail = 0;
-  await Promise.all(SOURCES.map(async s => {
-    try {
-      const items = await fetchWithRetry(s);
-      collected.push(...items);
+  const results = await runLimited(SOURCES, fetchWithRetry, 5);
+  for (const r of results) {
+    if (r.ok) {
+      collected.push(...r.value);
       ok++;
-    } catch (e) {
+    } else {
       fail++;
-      console.warn("Failed:", s.name, e);
+      console.warn("Failed:", r.item.name, r.error);
     }
-  }));
+  }
   state.items = collected;
   renderHero();
   renderFeed();
