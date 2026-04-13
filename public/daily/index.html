@@ -1009,26 +1009,84 @@ function dedupKey(title) {
 }
 
 // --- fetching ---
-// Public CORS proxies with fallback (GitHub Pages has no server).
-// Codetabs first — most reliable free proxy as of now.
+// Primary: rss2json (reliable JSON API with CORS, free, ~10 req/s)
+// Fallback: CORS proxies for feeds rss2json can't handle.
 const CORS_PROXIES = [
   u => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
   u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
-  u => "https://corsproxy.io/?" + encodeURIComponent(u),
 ];
 
-async function fetchFeed(source, fresh = false) {
+// Fetch + parse via rss2json — returns items directly, no XML parsing needed.
+async function fetchFeedJSON(source) {
+  const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(source.url);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const res = await fetch(url, { signal: ctl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (data.status !== "ok") throw new Error(data.message || "bad status");
+    return data.items || [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function itemsFromRss2Json(jsonItems, source) {
+  const cap = source.maxItems || 15;
+  return jsonItems.slice(0, cap).map(it => {
+    const date = it.pubDate ? new Date(it.pubDate.replace(" ", "T")) : null;
+    const desc = it.description || it.content || "";
+    let image = it.thumbnail || (it.enclosure && it.enclosure.link) || null;
+    if (!image && desc) {
+      const m = desc.match(/<img[^>]+src=["']([^"']+)["']/i);
+      if (m) image = m[1];
+    }
+    const link = it.link || "";
+    const isVideo = detectVideo(link, desc);
+    if (!image && isVideo) image = youtubeThumb(link);
+    return {
+      source: source.name,
+      sourceId: source.id,
+      cat: source.cat,
+      weight: source.weight,
+      title: stripHtml(it.title || ""),
+      link,
+      excerpt: truncate(stripHtml(desc), 280),
+      date,
+      image,
+      isVideo,
+    };
+  }).filter(x => x.title && x.link);
+}
+
+// XML-proxy fallback (kept for feeds rss2json can't parse)
+async function fetchFeedXML(source) {
   let lastErr;
   for (const makeUrl of CORS_PROXIES) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 10000);
     try {
-      const res = await fetch(makeUrl(source.url), { cache: fresh ? "no-store" : "default" });
+      const res = await fetch(makeUrl(source.url), { signal: ctl.signal });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const text = await res.text();
       if (!text || text.length < 50) throw new Error("empty body");
       return text;
     } catch (e) { lastErr = e; }
+    finally { clearTimeout(timer); }
   }
   throw lastErr || new Error("all proxies failed");
+}
+
+// Unified: try rss2json first, fall back to XML proxy, return parsed items.
+async function fetchAndParse(source) {
+  try {
+    const json = await fetchFeedJSON(source);
+    return itemsFromRss2Json(json, source);
+  } catch (e) {
+    const xml = await fetchFeedXML(source);
+    return parseFeed(xml, source);
+  }
 }
 
 function extractImage(it, descText) {
@@ -1348,12 +1406,12 @@ async function translateVisible() {
   }
 }
 
-async function fetchWithRetry(source, fresh) {
+async function fetchWithRetry(source) {
   try {
-    return await fetchFeed(source, fresh);
+    return await fetchAndParse(source);
   } catch (e) {
-    await new Promise(r => setTimeout(r, 1000));
-    return await fetchFeed(source, fresh);
+    await new Promise(r => setTimeout(r, 800));
+    return await fetchAndParse(source);
   }
 }
 
@@ -1367,8 +1425,8 @@ async function loadAll(fresh = false) {
   let ok = 0, fail = 0;
   await Promise.all(SOURCES.map(async s => {
     try {
-      const xml = await fetchWithRetry(s, fresh);
-      collected.push(...parseFeed(xml, s));
+      const items = await fetchWithRetry(s);
+      collected.push(...items);
       ok++;
     } catch (e) {
       fail++;
