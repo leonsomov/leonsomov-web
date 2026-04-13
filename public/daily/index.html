@@ -1415,8 +1415,8 @@ async function fetchWithRetry(source) {
   }
 }
 
-// Concurrency-limited runner — 5 parallel so rss2json's 10/10s limit isn't tripped.
-async function runLimited(items, worker, concurrency = 5) {
+// Concurrency-limited runner. onProgress fires after each item finishes.
+async function runLimited(items, worker, concurrency = 8, onProgress) {
   const results = new Array(items.length);
   let idx = 0;
   async function next() {
@@ -1424,6 +1424,7 @@ async function runLimited(items, worker, concurrency = 5) {
       const i = idx++;
       try { results[i] = { ok: true, value: await worker(items[i]) }; }
       catch (e) { results[i] = { ok: false, error: e, item: items[i] }; }
+      if (onProgress) onProgress(results[i], i);
     }
   }
   const workers = Array(Math.min(concurrency, items.length)).fill(0).map(next);
@@ -1431,24 +1432,72 @@ async function runLimited(items, worker, concurrency = 5) {
   return results;
 }
 
+// Client-side feed cache — lets reopen be instant.
+const FEED_CACHE_KEY = "daily-feed-cache-v1";
+const FEED_CACHE_TTL = 10 * 60 * 1000;
+function loadFeedCache() {
+  try {
+    const raw = localStorage.getItem(FEED_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.ts > FEED_CACHE_TTL) return null;
+    // Rehydrate Date objects
+    return data.items.map(i => ({ ...i, date: i.date ? new Date(i.date) : null }));
+  } catch { return null; }
+}
+function saveFeedCache(items) {
+  try {
+    const serializable = items.map(i => ({ ...i, date: i.date ? i.date.getTime() : null }));
+    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({ ts: Date.now(), items: serializable }));
+  } catch {}
+}
+
 async function loadAll(fresh = false) {
-  $("#status").textContent = "Fetching " + SOURCES.length + " feeds…";
-  state.items = [];
-  $("#feed").innerHTML = '<div class="loading">Fetching…</div>';
-  $("#hero").style.display = "none";
+  // Instant render from cache if available
+  if (!fresh) {
+    const cached = loadFeedCache();
+    if (cached && cached.length) {
+      state.items = cached;
+      renderHero();
+      renderFeed();
+      $("#status").textContent = `cached · refreshing…`;
+    } else {
+      state.items = [];
+      $("#feed").innerHTML = '<div class="loading">Fetching…</div>';
+      $("#hero").style.display = "none";
+      $("#status").textContent = "Fetching " + SOURCES.length + " feeds…";
+    }
+  } else {
+    state.items = [];
+    $("#feed").innerHTML = '<div class="loading">Fetching…</div>';
+    $("#hero").style.display = "none";
+    $("#status").textContent = "Fetching " + SOURCES.length + " feeds…";
+  }
+
   const collected = [];
   let ok = 0, fail = 0;
-  const results = await runLimited(SOURCES, fetchWithRetry, 5);
-  for (const r of results) {
-    if (r.ok) {
-      collected.push(...r.value);
-      ok++;
-    } else {
-      fail++;
-      console.warn("Failed:", r.item.name, r.error);
-    }
-  }
+  let lastRender = 0;
+  const progressive = () => {
+    const now = Date.now();
+    if (now - lastRender < 400) return;
+    lastRender = now;
+    state.items = collected.slice();
+    renderHero();
+    renderFeed();
+    $("#status").textContent = `${ok} of ${SOURCES.length} · ${state.items.length} stories…`;
+  };
+
+  const results = await runLimited(SOURCES, async (s) => {
+    const items = await fetchWithRetry(s);
+    collected.push(...items);
+    ok++;
+    progressive();
+    return items;
+  }, 8);
+
+  for (const r of results) if (!r.ok) fail++;
   state.items = collected;
+  saveFeedCache(collected);
   renderHero();
   renderFeed();
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
