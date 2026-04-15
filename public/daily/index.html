@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Daily">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1086,24 +1089,16 @@ async function fetchAndParse(source) {
   }
 }
 
-// Client-side feed cache
-const FEED_CACHE_KEY = "daily-feed-cache-v3";
-const FEED_CACHE_TTL = 10 * 60 * 1000;
-function loadFeedCache() {
-  try {
-    const raw = localStorage.getItem(FEED_CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (Date.now() - data.ts > FEED_CACHE_TTL) return null;
-    return data.items.map(i => ({ ...i, date: i.date ? new Date(i.date) : null }));
-  } catch { return null; }
-}
-function saveFeedCache(items) {
-  try {
-    const serializable = items.map(i => ({ ...i, date: i.date ? i.date.getTime() : null }));
-    localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({ ts: Date.now(), items: serializable }));
-  } catch {}
-}
+// Client-side feed cache removed intentionally.
+// Partial fetches kept poisoning the cache; every visit now gets a fresh fetch.
+// Purge any old cache data on load so it doesn't linger in localStorage.
+try {
+  for (const k of ["daily-feed-cache-v1", "daily-feed-cache-v2", "daily-feed-cache-v3"]) {
+    localStorage.removeItem(k);
+  }
+} catch {}
+function loadFeedCache() { return null; }
+function saveFeedCache() { /* noop */ }
 
 function extractImage(it, descText) {
   // Try Media RSS, enclosure, itunes:image, then first <img> in description HTML
@@ -1488,12 +1483,6 @@ async function loadAll(fresh = false) {
 
   for (const r of results) if (!r.ok) fail++;
   state.items = collected;
-  // Only cache if we got a reasonably complete result.
-  // Partial fetches (e.g. slow feeds timing out) would otherwise poison the cache.
-  const successRatio = ok / SOURCES.length;
-  if (successRatio >= 0.75) {
-    saveFeedCache(collected);
-  }
   renderHero();
   renderFeed();
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
