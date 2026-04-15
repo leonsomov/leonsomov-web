@@ -738,15 +738,16 @@ const SOURCES = [
   { id: "hnau", cat: "synths",   weight: 0.75, name: "HN: audio",              url: "https://hnrss.org/newest?q=audio", origin: true, maxItems: 8 },
   { id: "hnmd", cat: "synths",   weight: 0.75, name: "HN: modular",            url: "https://hnrss.org/newest?q=modular", origin: true, maxItems: 8 },
 
-  // DAW / production — broad: any DAW, plugins, mixing, recording
-  { id: "btw",  cat: "daw",      weight: 1.00, name: "Bitwig (news)",          url: "https://news.google.com/rss/search?q=bitwig&hl=en-US&gl=US&ceid=US:en" },
-  { id: "rkk",  cat: "daw",      weight: 0.95, name: "Rekkerd",                url: "https://rekkerd.org/feed/" },
-  { id: "spl",  cat: "daw",      weight: 0.90, name: "Splice Blog",            url: "https://splice.com/blog/feed/" },
-  { id: "ni",   cat: "daw",      weight: 0.90, name: "Native Instruments",     url: "https://blog.native-instruments.com/feed/" },
-  { id: "paf",  cat: "daw",      weight: 0.90, name: "Pro Audio Files",        url: "https://theproaudiofiles.com/feed/" },
-  { id: "lpr",  cat: "daw",      weight: 0.85, name: "Logic Pros",             url: "https://9to5mac.com/category/logic-pro/feed/" },
-  { id: "fls",  cat: "daw",      weight: 0.80, name: "FL Studio News",         url: "https://www.image-line.com/fl-studio-news/feed" },
-  { id: "top",  cat: "daw",      weight: 0.80, name: "Tape Op",                url: "https://tapeop.com/feed/" },
+  // DAW / production — all DAWs, Bitwig priority
+  { id: "btw",  cat: "daw",      weight: 1.00, name: "Bitwig",                 url: "https://news.google.com/rss/search?q=bitwig&hl=en-US&gl=US&ceid=US:en" },
+  { id: "abl",  cat: "daw",      weight: 0.92, name: "Ableton Live",           url: "https://news.google.com/rss/search?q=ableton+live&hl=en-US&gl=US&ceid=US:en" },
+  { id: "log",  cat: "daw",      weight: 0.92, name: "Logic Pro",              url: "https://news.google.com/rss/search?q=logic+pro+apple&hl=en-US&gl=US&ceid=US:en" },
+  { id: "rkk",  cat: "daw",      weight: 0.90, name: "Rekkerd",                url: "https://rekkerd.org/feed/" },
+  { id: "spl",  cat: "daw",      weight: 0.85, name: "Splice Blog",            url: "https://splice.com/blog/feed/" },
+  { id: "ni",   cat: "daw",      weight: 0.85, name: "Native Instruments",     url: "https://blog.native-instruments.com/feed/" },
+  { id: "paf",  cat: "daw",      weight: 0.85, name: "Pro Audio Files",        url: "https://theproaudiofiles.com/feed/" },
+  { id: "fls",  cat: "daw",      weight: 0.75, name: "FL Studio News",         url: "https://www.image-line.com/fl-studio-news/feed" },
+  { id: "top",  cat: "daw",      weight: 0.75, name: "Tape Op",                url: "https://tapeop.com/feed/" },
 
   // Electronic music
   { id: "wire", cat: "music",    weight: 1.00, name: "The Wire",               url: "https://www.thewire.co.uk/home/feed" },
