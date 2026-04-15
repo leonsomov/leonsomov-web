@@ -1086,7 +1086,7 @@ async function fetchAndParse(source) {
 }
 
 // Client-side feed cache
-const FEED_CACHE_KEY = "daily-feed-cache-v2";
+const FEED_CACHE_KEY = "daily-feed-cache-v3";
 const FEED_CACHE_TTL = 10 * 60 * 1000;
 function loadFeedCache() {
   try {
@@ -1487,7 +1487,12 @@ async function loadAll(fresh = false) {
 
   for (const r of results) if (!r.ok) fail++;
   state.items = collected;
-  saveFeedCache(collected);
+  // Only cache if we got a reasonably complete result.
+  // Partial fetches (e.g. slow feeds timing out) would otherwise poison the cache.
+  const successRatio = ok / SOURCES.length;
+  if (successRatio >= 0.75) {
+    saveFeedCache(collected);
+  }
   renderHero();
   renderFeed();
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
