@@ -251,6 +251,14 @@
     border-bottom-color: var(--accent);
   }
   .tab:hover { color: var(--fg); }
+  .tab-count {
+    display: inline-block;
+    margin-left: 4px;
+    color: var(--dim);
+    font-size: 8px;
+    letter-spacing: 0;
+    vertical-align: super;
+  }
 
   /* ————————————— Section header ————————————— */
   .section-head {
@@ -896,7 +904,10 @@ function renderTabs() {
   CATEGORIES.forEach(c => {
     const btn = document.createElement("button");
     btn.className = "tab" + (state.category === c.id ? " on" : "");
-    btn.textContent = c.label;
+    const count = c.id === "all"
+      ? state.items.length
+      : state.items.filter(i => i.cat === c.id).length;
+    btn.innerHTML = `${c.label}<span class="tab-count">${count || ""}</span>`;
     btn.onclick = () => {
       state.category = c.id;
       savePrefs();
@@ -1289,7 +1300,14 @@ function renderFeed() {
   if (state.category !== "all") items = items.filter(i => i.cat === state.category);
   items.sort((a, b) => (b.date?.getTime() || 0) - (a.date?.getTime() || 0));
   if (!items.length) {
-    feed.innerHTML = '<div class="loading">No items in this view. Try another category or toggle filters.</div>';
+    const total = state.items.length;
+    const inCat = state.category === "all"
+      ? total
+      : state.items.filter(i => i.cat === state.category).length;
+    feed.innerHTML = `<div class="loading">
+      No items in this view.<br>
+      <span style="opacity:0.5;">loaded: ${total} total · ${inCat} in ${state.category}</span>
+    </div>`;
     return;
   }
   feed.innerHTML = items.map(i => renderItemHtml(i)).join("");
@@ -1468,6 +1486,7 @@ async function loadAll(fresh = false) {
     if (now - lastRender < 400) return;
     lastRender = now;
     state.items = collected.slice();
+    renderTabs();
     renderHero();
     renderFeed();
     $("#status").textContent = `${ok} of ${SOURCES.length} · ${state.items.length} stories…`;
@@ -1483,6 +1502,7 @@ async function loadAll(fresh = false) {
 
   for (const r of results) if (!r.ok) fail++;
   state.items = collected;
+  renderTabs();
   renderHero();
   renderFeed();
   const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
