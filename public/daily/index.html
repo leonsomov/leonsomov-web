@@ -829,6 +829,7 @@ const loadPrefs = () => {
 };
 const savePrefs = () => localStorage.setItem(LS_KEY, JSON.stringify({
   active: [...state.active],
+  knownIds: SOURCES.map(s => s.id),  // remember current source set so new ones auto-enable next update
   category: state.category,
   hideNegative: state.hideNegative,
   dedup: state.dedup,
@@ -847,8 +848,23 @@ function defaultCategory() {
   return "all";
 }
 
+// Reconcile saved active-sources with the current SOURCES list.
+// - Sources the user has seen before AND enabled → stay enabled
+// - Sources the user has seen before AND disabled → stay disabled
+// - Sources that are NEW (added in a code update) → auto-enable
+const allSourceIds = SOURCES.map(s => s.id);
+const knownIds = new Set(prefs.knownIds || prefs.active || []);
+const savedActive = new Set(prefs.active || []);
+const mergedActive = new Set();
+for (const id of allSourceIds) {
+  if (!knownIds.has(id)) mergedActive.add(id);       // new source → enable
+  else if (savedActive.has(id)) mergedActive.add(id); // known + was enabled
+  // else: known + user disabled → leave out
+}
+if (!prefs.active) allSourceIds.forEach(id => mergedActive.add(id)); // first visit
+
 const state = {
-  active: new Set(prefs.active || SOURCES.map(s => s.id)),
+  active: mergedActive,
   category: defaultCategory(),
   hideNegative: prefs.hideNegative !== false,
   dedup: prefs.dedup !== false,
